@@ -87,7 +87,7 @@ public class RtmpConfig {
             flazrHome = flazrHome + "/";
             logger.info("using 'flazr.home' = {}", flazrHome);
         }
-        File propsFile = new File(flazrHome + "conf/flazr.properties");
+        File propsFile = new File(flazrHome + "flazr.properties");
         if(!propsFile.exists()) {
             logger.warn("{} not found, will use configuration defaults", propsFile.getAbsolutePath());
         } else {

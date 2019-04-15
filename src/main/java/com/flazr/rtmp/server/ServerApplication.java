@@ -77,7 +77,7 @@ public class ServerApplication {
 
     public RtmpWriter getWriter(final String rawName, ServerStream.PublishType publishType) {
         final String streamName = Utils.trimSlashes(rawName);
-        final String path = "/" + RtmpConfig.SERVER_HOME_DIR + "/apps/" + name + "/";
+        final String path = RtmpConfig.SERVER_HOME_DIR + "/apps/" + name + "/";
         return new FlvWriter(path + streamName + ".flv");
     }
 
