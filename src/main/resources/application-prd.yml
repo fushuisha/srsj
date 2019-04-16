@@ -14,3 +14,5 @@ eureka:
     fetchRegistry: true
     serviceUrl:
       defaultZone: http://${HOST_NAME}:${server.port}/eureka/
+
+logbackConfigLocation: classpath:logback-prd.xml
