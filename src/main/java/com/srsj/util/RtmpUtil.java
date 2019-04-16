@@ -95,13 +95,13 @@ public class RtmpUtil {
         }
     }
 
-    public void log(Logger logger, String level, String msg, Object obj, Throwable e) {
-        if (logger == null || StringUtils.isBlank(level)) {
+    public void log(Logger logger, ConstUtil.LogLevelEnum level, String msg, Object obj, Throwable e) {
+        if (logger == null || level==null) {
             return;
         }
         msg = StringUtils.trimToEmpty(msg);
         switch (level) {
-            case "warn": {
+            case Warn: {
                 if (logger.isWarnEnabled()) {
                     if (e == null) {
                         if (obj == null) {
@@ -127,7 +127,7 @@ public class RtmpUtil {
                 }
                 break;
             }
-            case "error": {
+            case Error: {
                 if (logger.isErrorEnabled()) {
                     if (e == null) {
                         if (obj == null) {
@@ -153,10 +153,33 @@ public class RtmpUtil {
                 }
                 break;
             }
-            case "trace": {
-                if (isPrd()) {
-                    break;
+            case Debug: {
+                if (logger.isDebugEnabled()) {
+                    if (e == null) {
+                        if (obj == null) {
+                            logger.debug("{}", msg);
+                        } else {
+                            try {
+                                logger.debug(msg + ":{}", JacksonUtils.toJson(obj));
+                            } catch (Exception ex) {
+                                logger.warn(ex.toString(), ex);
+                            }
+                        }
+                    } else {
+                        if (obj == null) {
+                            logger.debug(msg, e);
+                        } else {
+                            try {
+                                logger.debug(msg + ":" + JacksonUtils.toJson(obj), e);
+                            } catch (Exception ex) {
+                                logger.warn(ex.toString(), ex);
+                            }
+                        }
+                    }
                 }
+                break;
+            }
+            case Trace: {
                 if (logger.isTraceEnabled()) {
                     if (e == null) {
                         if (obj == null) {
@@ -184,9 +207,6 @@ public class RtmpUtil {
             }
             default: {
                 // info
-                if (isPrd()) {
-                    break;
-                }
                 if (logger.isInfoEnabled()) {
                     if (e == null) {
                         if (obj == null) {
