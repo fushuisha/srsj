@@ -19,12 +19,12 @@
 
 package com.flazr.rtmp.message;
 
-import java.math.BigInteger;
-
 import com.flazr.rtmp.RtmpHeader;
 import com.flazr.util.Utils;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+
+import java.math.BigInteger;
 
 public class Video extends DataMessage {
 
@@ -44,7 +44,7 @@ public class Video extends DataMessage {
 //        return true;
     }
 
-    public Video(final RtmpHeader header, final ChannelBuffer in) {
+    public Video(final RtmpHeader header, final ByteBuf in) {
         super(header, in);
     }
 
@@ -54,23 +54,23 @@ public class Video extends DataMessage {
     
     public Video(final int time, final byte[] videoData, final int length){
     	header.setTime(time);
-    	data = ChannelBuffers.wrappedBuffer(videoData, 0, length);
+    	data = Unpooled.wrappedBuffer(videoData, 0, length);
     	header.setSize(data.readableBytes());
     }
 
     public Video(final int time, final byte[] prefix, final int compositionOffset, final byte[] videoData) {
         header.setTime(time);
-        data = ChannelBuffers.wrappedBuffer(prefix, Utils.toInt24(compositionOffset), videoData);
+        data = Unpooled.wrappedBuffer(prefix, Utils.toInt24(compositionOffset), videoData);
         header.setSize(data.readableBytes());
     }
 
-    public Video(final int time, final ChannelBuffer in) {
+    public Video(final int time, final ByteBuf in) {
         super(time, in);
     }
 
     public static Video empty() {
         Video empty = new Video();
-        empty.data = ChannelBuffers.wrappedBuffer(new byte[2]);
+        empty.data = Unpooled.wrappedBuffer(new byte[2]);
         return empty;
     }
 
@@ -208,7 +208,8 @@ public class Video extends DataMessage {
     }//findHeight()
     
     private void solveWidthAndHeight() {
-		String bits = padBitSequence(readBinaryString(data.toByteBuffer().array(), 1, 9));
+//		String bits = padBitSequence(readBinaryString(data.toByteBuffer().array(), 1, 9));
+        String bits = padBitSequence(readBinaryString(data.nioBuffer().array(), 1, 9));
 		
 		if (getCodec() == H263VIDEOPACKET) {
 			int hwCheck = bit2uint(bits.substring(30,33).toCharArray());
@@ -235,7 +236,7 @@ public class Video extends DataMessage {
 	}
 
 	public byte[] getBody() {
-		return data.toByteBuffer().array();
+		return data.nioBuffer().array();
 	}
 
 }

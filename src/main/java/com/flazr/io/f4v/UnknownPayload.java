@@ -19,25 +19,25 @@
 
 package com.flazr.io.f4v;
 
-import org.jboss.netty.buffer.ChannelBuffer;
+import io.netty.buffer.ByteBuf;
 
 public class UnknownPayload implements Payload {
 
     private BoxType type;
-    private ChannelBuffer data;
+    private ByteBuf data;
 
-    public UnknownPayload(ChannelBuffer in, BoxType type) {
+    public UnknownPayload(ByteBuf in, BoxType type) {
         this.data = in;
         this.type = type;
     }
 
     @Override
-    public void read(ChannelBuffer in) {
+    public void read(ByteBuf in) {
         data = in;
     }
 
     @Override
-    public ChannelBuffer write() {
+    public ByteBuf write() {
         return data;
     }
 

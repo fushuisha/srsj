@@ -21,15 +21,17 @@ package com.flazr.amf;
 
 
 import com.flazr.util.ValueToEnum;
+import io.netty.buffer.ByteBuf;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Arrays;
-import static com.flazr.amf.Amf0Value.Type.*;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static com.flazr.amf.Amf0Value.Type.MAP;
+import static com.flazr.amf.Amf0Value.Type.OBJECT;
 
 public class Amf0Value {
 
@@ -105,7 +107,7 @@ public class Amf0Value {
     private static final byte BOOLEAN_FALSE = 0x00;
     private static final byte[] OBJECT_END_MARKER = new byte[]{0x00, 0x00, 0x09};    
 
-    public static void encode(final ChannelBuffer out, final Object value) {
+    public static void encode(final ByteBuf out, final Object value) {
         final Type type = Type.getType(value);
         if(logger.isDebugEnabled()) {
             logger.debug(">> " + toString(type, value));
@@ -156,20 +158,20 @@ public class Amf0Value {
         }
     }
 
-    private static String decodeString(final ChannelBuffer in) {
+    private static String decodeString(final ByteBuf in) {
         final int size = in.readUnsignedShort();
         final byte[] bytes = new byte[size];
         in.readBytes(bytes);
         return new String(bytes); // TODO UTF-8 ?
     }
 
-    private static void encodeString(final ChannelBuffer out, final String value) {
+    private static void encodeString(final ByteBuf out, final String value) {
         final byte[] bytes = value.getBytes(); // TODO UTF-8 ?
         out.writeShort((short) bytes.length);
         out.writeBytes(bytes);
     }
 
-    private static void encodeObject(final ChannelBuffer out, final Object value) {
+    private static void encodeObject(final ByteBuf out, final Object value) {
         final Map<String, Object> map = (Map) value;
         for (final Map.Entry<String, Object> entry : map.entrySet()) {
             encodeString(out, entry.getKey());
@@ -178,13 +180,13 @@ public class Amf0Value {
         out.writeBytes(OBJECT_END_MARKER);
     }
 
-    public static void encode(final ChannelBuffer out, final Object... values) {
+    public static void encode(final ByteBuf out, final Object... values) {
         for (final Object value : values) {
             encode(out, value);
         }
     }
 
-    public static Object decode(final ChannelBuffer in) {
+    public static Object decode(final ByteBuf in) {
         final Type type = Type.valueToEnum(in.readByte());
         final Object value = decode(in, type);
         if(logger.isDebugEnabled()) {
@@ -193,7 +195,7 @@ public class Amf0Value {
         return value;
     }
 
-    private static Object decode(final ChannelBuffer in, final Type type) {
+    private static Object decode(final ByteBuf in, final Type type) {
     	String decodedString = "";
         switch (type) {
             case NUMBER: return Double.longBitsToDouble(in.readLong());
@@ -230,7 +232,7 @@ public class Amf0Value {
                 }
                 int i = 0;
                 final byte[] endMarker = new byte[3];
-                while (in.readable()) {
+                while (in.isReadable()) {
                     in.getBytes(in.readerIndex(), endMarker);
                     if (Arrays.equals(endMarker, OBJECT_END_MARKER)) {
                         in.skipBytes(3);

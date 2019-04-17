@@ -22,19 +22,16 @@ package com.flazr.rtmp;
 import com.flazr.rtmp.message.ChunkSize;
 import com.flazr.rtmp.message.Control;
 import com.flazr.rtmp.message.MessageType;
-
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.ChannelPipelineCoverage;
-import org.jboss.netty.channel.Channels;
-import org.jboss.netty.channel.MessageEvent;
-import org.jboss.netty.channel.SimpleChannelDownstreamHandler;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@ChannelPipelineCoverage("one")
-public class RtmpEncoder extends SimpleChannelDownstreamHandler {
+//@ChannelPipelineCoverage("one")
+public class RtmpEncoder extends ChannelDuplexHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(RtmpEncoder.class);
 
@@ -46,13 +43,18 @@ public class RtmpEncoder extends SimpleChannelDownstreamHandler {
         channelPrevHeaders = new RtmpHeader[RtmpHeader.MAX_CHANNEL_ID];
     }
 
+//    @Override
+//    public void writeRequested(final ChannelHandlerContext ctx, final MessageEvent e) {        
+//        Channels.write(ctx, e.getFuture(), encode((RtmpMessage) e.getMessage()));
+//    }
+
     @Override
-    public void writeRequested(final ChannelHandlerContext ctx, final MessageEvent e) {        
-        Channels.write(ctx, e.getFuture(), encode((RtmpMessage) e.getMessage()));
+    public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+        ctx.write(encode((RtmpMessage)msg), promise);
     }
 
-    public ChannelBuffer encode(final RtmpMessage message) {
-        final ChannelBuffer in = message.encode();
+    public ByteBuf encode(final RtmpMessage message) {
+        final ByteBuf in = message.encode();
         final RtmpHeader header = message.getHeader();
         if(header.isChunkSize()) {
             final ChunkSize csMessage = (ChunkSize) message;
@@ -92,10 +94,10 @@ public class RtmpEncoder extends SimpleChannelDownstreamHandler {
         	if (message.getHeader().getMessageType() != MessageType.CONTROL || ((Control) message).getType() != Control.Type.PING_RESPONSE)
         		logger.debug(">> {}", message);
         }                
-        final ChannelBuffer out = ChannelBuffers.buffer(
+        final ByteBuf out = Unpooled.buffer(
                 RtmpHeader.MAX_ENCODED_SIZE + header.getSize() + header.getSize() / chunkSize);
         boolean first = true;
-        while(in.readable()) {
+        while(in.isReadable()) {
             final int size = Math.min(chunkSize, in.readableBytes());
             if(first) {                
                 header.encode(out);

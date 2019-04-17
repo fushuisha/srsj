@@ -19,23 +19,18 @@
 
 package com.flazr.util;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
-
-import java.io.OutputStream;
-import java.net.InetAddress;
-import java.net.Socket;
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
-
+import io.netty.buffer.ByteBuf;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
-import org.jboss.netty.buffer.ChannelBuffer;
+
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.io.*;
+import java.net.InetAddress;
+import java.net.Socket;
 
 public class Utils {
 
@@ -107,7 +102,7 @@ public class Utils {
         return new byte[] {(byte)(value >>> 16), (byte)(value >>> 8), (byte)value};
     }
 
-    public static int readInt32Reverse(final ChannelBuffer in) {
+    public static int readInt32Reverse(final ByteBuf in) {
         final byte a = in.readByte();
         final byte b = in.readByte();
         final byte c = in.readByte();
@@ -120,7 +115,7 @@ public class Utils {
         return val;
     }
 
-    public static void writeInt32Reverse(final ChannelBuffer out, final int value) {
+    public static void writeInt32Reverse(final ByteBuf out, final int value) {
         out.writeByte((byte) (0xFF & value));
         out.writeByte((byte) (0xFF & (value >> 8)));
         out.writeByte((byte) (0xFF & (value >> 16)));

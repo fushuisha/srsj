@@ -19,14 +19,14 @@
 
 package com.flazr.io.f4v.box;
 
-import com.flazr.io.f4v.*;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
+import com.flazr.io.f4v.Payload;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class CTTS implements Payload {
 
@@ -57,12 +57,12 @@ public class CTTS implements Payload {
         this.records = records;
     }
 
-    public CTTS(ChannelBuffer in) {
+    public CTTS(ByteBuf in) {
         read(in);
     }
 
     @Override
-    public void read(ChannelBuffer in) {
+    public void read(ByteBuf in) {
         in.readInt(); // UI8 version + UI24 flags
         final int count = in.readInt();
         logger.debug("no of composition time to sample records: {}", count);
@@ -78,8 +78,8 @@ public class CTTS implements Payload {
     }
 
     @Override
-    public ChannelBuffer write() {
-        ChannelBuffer out = ChannelBuffers.dynamicBuffer();
+    public ByteBuf write() {
+        ByteBuf out = Unpooled.buffer();
         out.writeInt(0); // UI8 version + UI24 flags
         final int count = records.size();
         out.writeInt(count);

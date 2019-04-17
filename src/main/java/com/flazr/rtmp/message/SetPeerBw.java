@@ -20,8 +20,8 @@
 package com.flazr.rtmp.message;
 
 import com.flazr.rtmp.RtmpHeader;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 
 public class SetPeerBw extends AbstractMessage {
 
@@ -34,7 +34,7 @@ public class SetPeerBw extends AbstractMessage {
     private int value;
     private LimitType limitType;
 
-    public SetPeerBw(RtmpHeader header, ChannelBuffer in) {
+    public SetPeerBw(RtmpHeader header, ByteBuf in) {
         super(header, in);
     }
 
@@ -61,15 +61,15 @@ public class SetPeerBw extends AbstractMessage {
     }
 
     @Override
-    public ChannelBuffer encode() {
-        ChannelBuffer out = ChannelBuffers.buffer(5);
+    public ByteBuf encode() {
+        ByteBuf out = Unpooled.buffer(5);
         out.writeInt(value);
         out.writeByte((byte) limitType.ordinal());
         return out;
     }
 
     @Override
-    public void decode(ChannelBuffer in) {
+    public void decode(ByteBuf in) {
         value = in.readInt();
         limitType = LimitType.values()[in.readByte()];
     }

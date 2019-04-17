@@ -20,8 +20,8 @@
 package com.flazr.rtmp.message;
 
 import com.flazr.rtmp.RtmpHeader;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 
 public class BytesRead extends AbstractMessage {
 
@@ -32,7 +32,7 @@ public class BytesRead extends AbstractMessage {
         return MessageType.BYTES_READ;
     }
 
-    public BytesRead(RtmpHeader header, ChannelBuffer in) {
+    public BytesRead(RtmpHeader header, ByteBuf in) {
         super(header, in);
     }
 
@@ -45,14 +45,14 @@ public class BytesRead extends AbstractMessage {
     }
 
     @Override
-    public ChannelBuffer encode() {
-        ChannelBuffer out = ChannelBuffers.buffer(4);
+    public ByteBuf encode() {
+        ByteBuf out = Unpooled.buffer(4);
         out.writeInt(value);
         return out;
     }
 
     @Override
-    public void decode(ChannelBuffer in) {
+    public void decode(ByteBuf in) {
         value = in.readInt();
     }
 

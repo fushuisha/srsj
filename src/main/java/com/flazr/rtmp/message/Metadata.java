@@ -24,12 +24,9 @@ import com.flazr.io.f4v.MovieInfo;
 import com.flazr.io.f4v.TrackInfo;
 import com.flazr.io.f4v.box.STSD.VideoSD;
 import com.flazr.rtmp.RtmpHeader;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import org.jboss.netty.buffer.ChannelBuffer;
+import io.netty.buffer.ByteBuf;
+
+import java.util.*;
 
 public abstract class Metadata extends AbstractMessage {
 
@@ -42,7 +39,7 @@ public abstract class Metadata extends AbstractMessage {
         header.setSize(encode().readableBytes());
     }
 
-    public Metadata(RtmpHeader header, ChannelBuffer in) {
+    public Metadata(RtmpHeader header, ByteBuf in) {
         super(header, in);
     }
 

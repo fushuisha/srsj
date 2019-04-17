@@ -20,14 +20,14 @@
 package com.flazr.rtmp.message;
 
 import com.flazr.rtmp.RtmpHeader;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 
 public class WindowAckSize extends AbstractMessage {
     
     private int value;
     
-    public WindowAckSize(RtmpHeader header, ChannelBuffer in) {
+    public WindowAckSize(RtmpHeader header, ByteBuf in) {
         super(header, in);
     }
     
@@ -45,14 +45,14 @@ public class WindowAckSize extends AbstractMessage {
     }
 
     @Override
-    public ChannelBuffer encode() {
-        ChannelBuffer out = ChannelBuffers.buffer(4);
+    public ByteBuf encode() {
+        ByteBuf out = Unpooled.buffer(4);
         out.writeInt(value);
         return out;
     }
 
     @Override
-    public void decode(ChannelBuffer in) {
+    public void decode(ByteBuf in) {
         value = in.readInt();
     }
 

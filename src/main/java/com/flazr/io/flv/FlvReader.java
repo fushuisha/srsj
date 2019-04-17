@@ -23,14 +23,10 @@ import com.flazr.io.BufferReader;
 import com.flazr.io.FileChannelReader;
 import com.flazr.rtmp.RtmpMessage;
 import com.flazr.rtmp.RtmpReader;
-import com.flazr.rtmp.message.Aggregate;
-import com.flazr.rtmp.message.MessageType;
-import com.flazr.rtmp.message.Metadata;
-import com.flazr.rtmp.message.MetadataAmf0;
-import com.flazr.rtmp.message.Video;
-
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
+import com.flazr.rtmp.message.*;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
+import io.netty.buffer.Unpooled;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -202,7 +198,7 @@ public class FlvReader implements RtmpReader {
         if(aggregateDuration <= 0) {
             return new FlvAtom(in);
         }
-        final ChannelBuffer out = ChannelBuffers.dynamicBuffer();
+        final ByteBuf out = Unpooled.buffer();
         int firstAtomTime = -1;
         while(hasNext()) {
             final FlvAtom flvAtom = new FlvAtom(in);
@@ -210,7 +206,7 @@ public class FlvReader implements RtmpReader {
             if(firstAtomTime == -1) {
                 firstAtomTime = currentAtomTime;
             }
-            final ChannelBuffer temp = flvAtom.write();
+            final ByteBuf temp = flvAtom.write();
             if(out.readableBytes() + temp.readableBytes() > AGGREGATE_SIZE_LIMIT) {
                 prev();
                 break;
@@ -242,7 +238,7 @@ public class FlvReader implements RtmpReader {
         FlvReader reader = new FlvReader("/home/felipe/codes/mconf/bbbot/bot/etc/sample.flv");
         while(reader.hasNext()) {
             RtmpMessage message = reader.next();
-            logger.debug("{} {}", message, ChannelBuffers.hexDump(message.encode()));
+            logger.debug("{} {}", message, ByteBufUtil.hexDump(message.encode()));
         }
         reader.close();
     }

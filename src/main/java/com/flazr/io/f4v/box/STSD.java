@@ -19,17 +19,16 @@
 
 package com.flazr.io.f4v.box;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.flazr.io.f4v.Payload;
 import com.flazr.io.f4v.SampleType;
 import com.flazr.util.Utils;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class STSD implements Payload {
 
@@ -40,7 +39,7 @@ public class STSD implements Payload {
         private Payload sampleDescription;
     }
 
-    public STSD(ChannelBuffer in) {
+    public STSD(ByteBuf in) {
         read(in);
     }
 
@@ -65,7 +64,7 @@ public class STSD implements Payload {
     }
 
     @Override
-    public void read(ChannelBuffer in) {
+    public void read(ByteBuf in) {
         in.readInt(); // UI8 version + UI24 flags
         final int count = in.readInt();
         logger.debug("no of sample descripton records: {}", count);
@@ -88,12 +87,12 @@ public class STSD implements Payload {
     }
 
     @Override
-    public ChannelBuffer write() {
-        ChannelBuffer out = ChannelBuffers.dynamicBuffer();
+    public ByteBuf write() {
+        ByteBuf out = Unpooled.buffer();
         out.writeInt(0); // UI8 version + UI24 flags
         out.writeInt(records.size());
         for (STSDRecord record : records) {
-            ChannelBuffer desc = record.sampleDescription.write();
+            ByteBuf desc = record.sampleDescription.write();
             out.writeInt(8 + desc.readableBytes());
             out.writeBytes(record.type.name().toLowerCase().getBytes());
             out.writeBytes(desc);
@@ -120,7 +119,7 @@ public class STSD implements Payload {
         private int samplesPerFrame;
         private MP4Descriptor mp4Descriptor;
 
-        public AudioSD(ChannelBuffer in) {
+        public AudioSD(ByteBuf in) {
             read(in);
         }
 
@@ -129,7 +128,7 @@ public class STSD implements Payload {
         }
         
         @Override
-        public void read(ChannelBuffer in) {
+        public void read(ByteBuf in) {
             in.skipBytes(6); // reserved
             index = in.readShort();
             innerVersion = in.readShort();
@@ -150,8 +149,8 @@ public class STSD implements Payload {
         }
 
         @Override
-        public ChannelBuffer write() {
-            ChannelBuffer out = ChannelBuffers.dynamicBuffer();
+        public ByteBuf write() {
+            ByteBuf out = Unpooled.buffer();
             out.writeBytes(new byte[6]);
             out.writeShort(index);
             out.writeShort(innerVersion);
@@ -217,12 +216,12 @@ public class STSD implements Payload {
             return configBytes;
         }
 
-        public VideoSD(ChannelBuffer in) {
+        public VideoSD(ByteBuf in) {
             read(in);
         }
 
         @Override
-        public void read(ChannelBuffer in) {
+        public void read(ByteBuf in) {
             in.skipBytes(6); // reserved
             index = in.readShort();
             preDefined1 = in.readShort();
@@ -251,8 +250,8 @@ public class STSD implements Payload {
         }
 
         @Override
-        public ChannelBuffer write() {
-            ChannelBuffer out = ChannelBuffers.dynamicBuffer();
+        public ByteBuf write() {
+            ByteBuf out = Unpooled.buffer();
             out.writeBytes(new byte[6]);
             out.writeShort(index);
             out.writeShort(preDefined1);

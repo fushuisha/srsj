@@ -20,15 +20,15 @@
 package com.flazr.rtmp.message;
 
 import com.flazr.rtmp.RtmpHeader;
-import org.jboss.netty.buffer.ChannelBuffer;
+import io.netty.buffer.ByteBuf;
 
 public class Aggregate extends DataMessage {
 
-    public Aggregate(RtmpHeader header, ChannelBuffer in) {
+    public Aggregate(RtmpHeader header, ByteBuf in) {
         super(header, in);
     }
 
-    public Aggregate(int time, ChannelBuffer in) {
+    public Aggregate(int time, ByteBuf in) {
         super();
         header.setTime(time);
         data = in;

@@ -19,14 +19,15 @@
 
 package com.flazr.io;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class FileChannelReader implements BufferReader {
 
@@ -75,8 +76,8 @@ public class FileChannelReader implements BufferReader {
     }
 
     @Override
-    public ChannelBuffer read(final int size) {
-        return ChannelBuffers.wrappedBuffer(readBytes(size));
+    public ByteBuf read(final int size) {
+        return Unpooled.wrappedBuffer(readBytes(size));
     }
 
     @Override

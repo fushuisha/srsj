@@ -19,12 +19,12 @@
 
 package com.flazr.io.f4v;
 
-import org.jboss.netty.buffer.ChannelBuffer;
+import io.netty.buffer.ByteBuf;
 
 public interface Payload {
 
-    void read(ChannelBuffer in);
+    void read(ByteBuf in);
     
-    ChannelBuffer write();
+    ByteBuf write();
 
 }

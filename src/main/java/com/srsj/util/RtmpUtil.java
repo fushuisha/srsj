@@ -4,16 +4,19 @@ import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
-import org.springframework.stereotype.Component;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import java.lang.reflect.Array;
 import java.util.Collection;
 import java.util.Map;
 
-@Component
+
 public class RtmpUtil {
 
-    public double bytes2Double(byte[] arr) {
+    private static int chunkSize = 4096;
+
+    public static double bytes2Double(byte[] arr) {
         long bits =
                 ((long) (arr[0] & 0xff) << 56)
                         | ((long) (arr[1] & 0xff) << 48)
@@ -27,34 +30,34 @@ public class RtmpUtil {
         return Double.longBitsToDouble(bits);
     }
 
-    public boolean bytes2boolean(byte[] bytes) {
+    public static boolean bytes2boolean(byte[] bytes) {
         Byte b = bytes[0];
         return BooleanUtils.toBoolean(b.intValue());
     }
 
-    public int bytes2Int(byte[] bytes) {
+    public static int bytes2Int(byte[] bytes) {
         return Integer.parseInt(Hex.encodeHexString(bytes), 16);
     }
 
-    public long bytes2Long(byte[] bytes) {
+    public static long bytes2Long(byte[] bytes) {
         return Long.parseLong(Hex.encodeHexString(bytes), 16);
     }
 
-    public byte[] int2bytes(int i, int byteCount) throws Exception {
+    public static byte[] int2bytes(int i, int byteCount) throws Exception {
         String iHexString = Integer.toHexString(i);
         iHexString = fillZero(iHexString, byteCount);
         byte[] bytes = Hex.decodeHex(iHexString);
         return bytes;
     }
 
-    public byte[] long2bytes(long l, int byteCount) throws Exception {
+    public static byte[] long2bytes(long l, int byteCount) throws Exception {
         String lHexString = Long.toHexString(l);
         lHexString = fillZero(lHexString, byteCount);
         byte[] bytes = Hex.decodeHex(lHexString);
         return bytes;
     }
 
-    public byte[] double2bytes(double d) {
+    public static byte[] double2bytes(double d) {
         long l = Double.doubleToRawLongBits(d);
         return new byte[]{
                 (byte) ((l >> 56) & 0xff), (byte) ((l >> 48) & 0xff), (byte) ((l >> 40) & 0xff),
@@ -63,7 +66,7 @@ public class RtmpUtil {
         };
     }
 
-    public String fillZero(String hexString, int byteCount) {
+    public static String fillZero(String hexString, int byteCount) {
         int byteLength = byteCount * 2;
         int hexLength = hexString.length();
         if (byteLength > hexLength) {
@@ -76,7 +79,7 @@ public class RtmpUtil {
         }
     }
 
-    public boolean isValidCollect(Object obj) {
+    public static boolean isValidCollect(Object obj) {
         if (obj == null) {
             return false;
         } else if (obj instanceof Collection) {
@@ -95,7 +98,7 @@ public class RtmpUtil {
         }
     }
 
-    public void log(Logger logger, ConstUtil.LogLevelEnum level, String msg, Object obj, Throwable e) {
+    public static void log(Logger logger, ConstUtil.LogLevelEnum level, String msg, Object obj, Throwable e) {
         if (logger == null || level==null) {
             return;
         }
@@ -236,15 +239,34 @@ public class RtmpUtil {
 
     }
 
-    public boolean isPrd() {
+    public static boolean isPrd() {
         return StringUtils.startsWithAny(getSpringProfilesActive(), "prd", "prod");
     }
 
-    public String getSpringProfilesActive() {
+    public static String getSpringProfilesActive() {
         String active = System.getenv("spring.profiles.active");
         if (StringUtils.isBlank(active)) {
             active = System.getProperty("spring.profiles.active");
         }
         return active;
+    }
+
+    public static int getChunkSize() {
+        return chunkSize;
+    }
+
+    public static void setChunkSize(int chunkSize) {
+        RtmpUtil.chunkSize = chunkSize;
+    }
+
+    public static byte[] sha256(final byte[] message, final byte[] key) {
+        final Mac mac;
+        try {
+            mac = Mac.getInstance("HmacSHA256");
+            mac.init(new SecretKeySpec(key, "HmacSHA256"));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return mac.doFinal(message);
     }
 }

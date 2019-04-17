@@ -19,16 +19,7 @@ package org.red5.server.so;
  * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA 
  */
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.locks.ReentrantLock;
-
-import org.jboss.netty.channel.Channel;
+import io.netty.channel.Channel;
 import org.red5.server.api.IAttributeStore;
 import org.red5.server.api.event.IEvent;
 import org.red5.server.api.event.IEventDispatcher;
@@ -38,6 +29,15 @@ import org.red5.server.api.so.ISharedObjectListener;
 import org.red5.server.so.ISharedObjectEvent.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Works with client-side shared object

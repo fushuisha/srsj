@@ -1,5 +1,6 @@
 package com.srsj;
 
+
 import com.flazr.rtmp.server.RtmpServer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
@@ -15,17 +16,18 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class ServiceApplication {
 
-	public static void main(String[] args) throws Exception {
-		SpringApplication.run(ServiceApplication.class, args);
-		RtmpServer.main(null);
-	}
+    public static void main(String[] args) throws Exception {
+        SpringApplication.run(ServiceApplication.class, args);
+        RtmpServer.main(new String[]{"1935"});
+    }
 
-	@Value("${server.port}")
-	String port;
-	@RequestMapping("/console")
-	public String home(@RequestParam(required = false) String name) {
-		return "hi "+name+",i am from port:" +port;
-	}
+    @Value("${server.port}")
+    String port;
+
+    @RequestMapping("/console")
+    public String home(@RequestParam(required = false) String name) {
+        return "hi " + name + ",i am from port:" + port;
+    }
 
 
 }

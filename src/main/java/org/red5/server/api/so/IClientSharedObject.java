@@ -1,6 +1,6 @@
 package org.red5.server.api.so;
 
-import org.jboss.netty.channel.Channel;
+import io.netty.channel.Channel;
 
 /*
  * RED5 Open Source Flash Server - http://code.google.com/p/red5/

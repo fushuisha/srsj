@@ -19,18 +19,17 @@
 
 package com.flazr.util;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-
-import org.jboss.netty.channel.ExceptionEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
 
 public class ChannelUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(ChannelUtils.class);
 
-    public static void exceptionCaught(final ExceptionEvent e) {
+    public static void exceptionCaught(final Throwable e) {
         logger.warn("exception: {}", e.toString());
         if (e.getCause() != null) {
             StringWriter sw = new StringWriter();

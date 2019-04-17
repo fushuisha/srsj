@@ -1,8 +1,8 @@
 package com.flazr.rtmp.message;
 
 import com.flazr.rtmp.RtmpHeader;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 
 public class Abort extends AbstractMessage {
 
@@ -12,7 +12,7 @@ public class Abort extends AbstractMessage {
         this.streamId = streamId;
     }
 
-    public Abort(final RtmpHeader header, final ChannelBuffer in) {
+    public Abort(final RtmpHeader header, final ByteBuf in) {
         super(header, in);
     }
 
@@ -26,14 +26,14 @@ public class Abort extends AbstractMessage {
     }
 
     @Override
-    public ChannelBuffer encode() {
-        final ChannelBuffer out = ChannelBuffers.buffer(4);
+    public ByteBuf encode() {
+        final ByteBuf out = Unpooled.buffer(4);
         out.writeInt(streamId);
         return out;
     }
 
     @Override
-    public void decode(ChannelBuffer in) {
+    public void decode(ByteBuf in) {
         streamId = in.readInt();
     }
 

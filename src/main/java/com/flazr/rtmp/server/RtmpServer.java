@@ -20,22 +20,27 @@
 package com.flazr.rtmp.server;
 
 import com.flazr.rtmp.RtmpConfig;
+import com.flazr.rtmp.RtmpDecoder;
+import com.flazr.rtmp.RtmpEncoder;
 import com.flazr.util.StopMonitor;
-import java.net.InetSocketAddress;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import org.jboss.netty.bootstrap.ServerBootstrap;
-import org.jboss.netty.channel.ChannelFactory;
-import org.jboss.netty.channel.group.ChannelGroup;
-import org.jboss.netty.channel.group.ChannelGroupFuture;
-import org.jboss.netty.channel.group.DefaultChannelGroup;
-import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
-import org.jboss.netty.util.HashedWheelTimer;
-import org.jboss.netty.util.Timer;
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.*;
+import io.netty.channel.group.ChannelGroup;
+import io.netty.channel.group.ChannelGroupFuture;
+import io.netty.channel.group.DefaultChannelGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.channel.unix.PreferredDirectByteBufAllocator;
+import io.netty.util.HashedWheelTimer;
+import io.netty.util.Timer;
+import io.netty.util.concurrent.DefaultEventExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 public class RtmpServer {
 
@@ -43,43 +48,82 @@ public class RtmpServer {
 
     static {
         RtmpConfig.configureServer();
-        CHANNELS = new DefaultChannelGroup("server-channels");
-        APPLICATIONS = new ConcurrentHashMap<String, ServerApplication>();
+        CHANNELS = new DefaultChannelGroup("server-channels",new DefaultEventExecutor());
+        APPLICATIONS = new ConcurrentHashMap<>();
         TIMER = new HashedWheelTimer(RtmpConfig.TIMER_TICK_SIZE, TimeUnit.MILLISECONDS);
     }
-    
+
     protected static final ChannelGroup CHANNELS;
     protected static final Map<String, ServerApplication> APPLICATIONS;
     public static final Timer TIMER;
 
-    public static void main(String[] args) throws Exception {
+    public void run(int port) throws Exception {
 
-        final ChannelFactory factory = new NioServerSocketChannelFactory(
-                Executors.newCachedThreadPool(),
-                Executors.newCachedThreadPool());
+//        final ChannelFactory factory = new ReflectiveChannelFactory(
+//                Executors.newCachedThreadPool(),
+//                Executors.newCachedThreadPool());
 
-        final ServerBootstrap bootstrap = new ServerBootstrap(factory);
+        EventLoopGroup bossGroup = new NioEventLoopGroup();
+        EventLoopGroup workerGroup = new NioEventLoopGroup();
+        try {
+            ServerBootstrap b = new ServerBootstrap();
+            b.group(bossGroup, workerGroup)
+                    .channel(NioServerSocketChannel.class)
+                    .option(ChannelOption.SO_BACKLOG, 100)
+                    .option(ChannelOption.ALLOCATOR, PreferredDirectByteBufAllocator.DEFAULT)
+                    .childOption(ChannelOption.TCP_NODELAY, true)
+                    .childOption(ChannelOption.SO_KEEPALIVE, true)
+                    .childOption(ChannelOption.RCVBUF_ALLOCATOR, new AdaptiveRecvByteBufAllocator(1024,2048,5096))
+                    .childHandler(new ChannelInitializer<SocketChannel>() {
+                        /*
+                         * (non-Javadoc)
+                         *
+                         * @see
+                         * io.netty.channel.ChannelInitializer#initChannel(io
+                         * .netty.channel.Channel)
+                         */
+                        public void initChannel(SocketChannel ch)
+                                throws Exception {
+                            ch.pipeline().addLast("handshaker", new ServerHandshakeHandler());
+                            ch.pipeline().addLast("decoder", new RtmpDecoder());
+                            ch.pipeline().addLast("encoder", new RtmpEncoder());
+//        pipeline.addLast("executor", new ExecutionHandler(
+//                new OrderedMemoryAwareThreadPoolExecutor(16, 1048576, 1048576)));
+                            ch.pipeline().addLast("handler", new ServerHandler());
+                        }
+                    });
+            ChannelFuture f = b.bind(port).sync();
+            System.out.println("Start file server at port : " + port);
+            f.channel().closeFuture().sync();
 
-        bootstrap.setPipelineFactory(new ServerPipelineFactory());
-        bootstrap.setOption("child.tcpNoDelay", true);
-        bootstrap.setOption("child.keepAlive", true);
 
-        final InetSocketAddress socketAddress = new InetSocketAddress(RtmpConfig.SERVER_PORT);
-        bootstrap.bind(socketAddress);
-        logger.info("server started, listening on: {}", socketAddress);
+            final Thread monitor = new StopMonitor(RtmpConfig.SERVER_STOP_PORT);
+            monitor.start();
+            monitor.join();
 
-        final Thread monitor = new StopMonitor(RtmpConfig.SERVER_STOP_PORT);
-        monitor.start();        
-        monitor.join();
-
-        TIMER.stop();
-        final ChannelGroupFuture future = CHANNELS.close();
-        logger.info("closing channels");
-        future.awaitUninterruptibly();
-        logger.info("releasing resources");
-        factory.releaseExternalResources();
-        logger.info("server stopped");
-
+            TIMER.stop();
+            final ChannelGroupFuture future = CHANNELS.close();
+            logger.info("closing channels");
+            future.awaitUninterruptibly();
+//            logger.info("releasing resources");
+//            factory.releaseExternalResources();
+//            logger.info("server stopped");
+        } finally {
+            // 优雅停机
+            bossGroup.shutdownGracefully();
+            workerGroup.shutdownGracefully();
+        }
     }
 
+    public static void main(String[] args) throws Exception {
+        int port = 1935;
+        if (args.length > 0) {
+            try {
+                port = Integer.parseInt(args[0]);
+            } catch (NumberFormatException e) {
+                e.printStackTrace();
+            }
+        }
+        new RtmpServer().run(port);
+    }
 }

@@ -20,10 +20,10 @@
 package com.flazr.rtmp.message;
 
 import com.flazr.rtmp.RtmpHeader;
-import com.flazr.util.ValueToEnum;
 import com.flazr.util.Utils;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
+import com.flazr.util.ValueToEnum;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,7 +71,7 @@ public class Control extends AbstractMessage {
     private int time;
     private byte[] bytes;
 
-    public Control(RtmpHeader header, ChannelBuffer in) {
+    public Control(RtmpHeader header, ByteBuf in) {
         super(header, in);
     }
 
@@ -146,14 +146,14 @@ public class Control extends AbstractMessage {
     }
 
     @Override
-    public ChannelBuffer encode() {
+    public ByteBuf encode() {
         final int size;
         switch(type) {
             case SWFV_RESPONSE: size = 44; break;
             case SET_BUFFER: size = 10; break;
             default: size = 6;
         }
-        ChannelBuffer out = ChannelBuffers.buffer(size);
+        ByteBuf out = Unpooled.buffer(size);
         out.writeShort((short) type.value);
         switch(type) {
             case STREAM_BEGIN:
@@ -184,7 +184,7 @@ public class Control extends AbstractMessage {
     }
 
     @Override
-    public void decode(ChannelBuffer in) {
+    public void decode(ByteBuf in) {
         type = Type.valueToEnum(in.readShort());
         switch(type) {
             case STREAM_BEGIN:

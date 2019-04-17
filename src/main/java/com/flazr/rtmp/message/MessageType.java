@@ -22,7 +22,7 @@ package com.flazr.rtmp.message;
 import com.flazr.rtmp.RtmpHeader;
 import com.flazr.rtmp.RtmpMessage;
 import com.flazr.util.ValueToEnum;
-import org.jboss.netty.buffer.ChannelBuffer;
+import io.netty.buffer.ByteBuf;
 import org.red5.server.so.SharedObjectMessage;
 
 public enum MessageType implements ValueToEnum.IntValue {
@@ -80,7 +80,7 @@ public enum MessageType implements ValueToEnum.IntValue {
         }
     }
 
-    public static RtmpMessage decode(final RtmpHeader header, final ChannelBuffer in) {
+    public static RtmpMessage decode(final RtmpHeader header, final ByteBuf in) {
         switch(header.getMessageType()) {
             case ABORT: return new Abort(header, in);
             case BYTES_READ: return new BytesRead(header, in);

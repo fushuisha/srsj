@@ -19,18 +19,8 @@
 
 package com.flazr.io.f4v;
 
-import com.flazr.io.f4v.box.FTYP;
-import com.flazr.io.f4v.box.STTS;
-import com.flazr.io.f4v.box.STSC;
-import com.flazr.io.f4v.box.STCO;
-import com.flazr.io.f4v.box.MVHD;
-import com.flazr.io.f4v.box.STSZ;
-import com.flazr.io.f4v.box.STSD;
-import com.flazr.io.f4v.box.CTTS;
-import com.flazr.io.f4v.box.TKHD;
-import com.flazr.io.f4v.box.MDHD;
-import com.flazr.io.f4v.box.STSS;
-import org.jboss.netty.buffer.ChannelBuffer;
+import com.flazr.io.f4v.box.*;
+import io.netty.buffer.ByteBuf;
 
 public enum BoxType {
 
@@ -75,7 +65,7 @@ public enum BoxType {
         }
     }
 
-    public Payload read(ChannelBuffer in) {
+    public Payload read(ByteBuf in) {
         switch(this) {
             case FTYP: return new FTYP(in);
             case MVHD: return new MVHD(in);

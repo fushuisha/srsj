@@ -19,14 +19,14 @@
 
 package com.flazr.io.f4v.box;
 
-import com.flazr.io.f4v.*;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
+import com.flazr.io.f4v.Payload;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class FTYP implements Payload {
 
@@ -36,17 +36,17 @@ public class FTYP implements Payload {
     private int minorVersion;
     private List<byte[]> compatibleBrands;
 
-    public FTYP(ChannelBuffer in) {
+    public FTYP(ByteBuf in) {
         read(in);
     }
 
     @Override
-    public void read(ChannelBuffer in) {
+    public void read(ByteBuf in) {
         majorBrand = new byte[4];
         in.readBytes(majorBrand);        
         minorVersion = in.readInt();        
         compatibleBrands = new ArrayList<byte[]>();
-        while (in.readable()) {
+        while (in.isReadable()) {
             final byte[] bytes = new byte[4];
             in.readBytes(bytes);            
             compatibleBrands.add(bytes);
@@ -54,8 +54,8 @@ public class FTYP implements Payload {
     }
 
     @Override
-    public ChannelBuffer write() {
-        ChannelBuffer out = ChannelBuffers.dynamicBuffer();
+    public ByteBuf write() {
+        ByteBuf out = Unpooled.buffer();
         out.writeBytes(majorBrand);
         out.writeInt(minorVersion);
         for (byte[] bytes : compatibleBrands) {

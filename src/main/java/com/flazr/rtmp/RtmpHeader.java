@@ -19,10 +19,10 @@
 
 package com.flazr.rtmp;
 
-import com.flazr.rtmp.message.*;
-import com.flazr.util.ValueToEnum;
+import com.flazr.rtmp.message.MessageType;
 import com.flazr.util.Utils;
-import org.jboss.netty.buffer.ChannelBuffer;
+import com.flazr.util.ValueToEnum;
+import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,7 +65,7 @@ public class RtmpHeader {
     private MessageType messageType;
     private int streamId;
 
-    public RtmpHeader(ChannelBuffer in, RtmpHeader[] incompleteHeaders) {
+    public RtmpHeader(ByteBuf in, RtmpHeader[] incompleteHeaders) {
         //=================== TYPE AND CHANNEL (1 - 3 bytes) ===================
         final int firstByteInt = in.readByte();
         final int typeAndChannel;
@@ -234,7 +234,7 @@ public class RtmpHeader {
         this.streamId = streamId;
     }
 
-    public void encode(ChannelBuffer out) {
+    public void encode(ByteBuf out) {
         out.writeBytes(encodeHeaderTypeAndChannel(headerType.value, channelId));
         if(headerType == Type.TINY) {
             return;

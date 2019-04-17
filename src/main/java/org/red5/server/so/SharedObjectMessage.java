@@ -19,26 +19,20 @@ package org.red5.server.so;
  * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA 
  */
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
+import com.flazr.amf.Amf0Value;
+import com.flazr.rtmp.RtmpHeader;
+import com.flazr.rtmp.message.AbstractMessage;
+import com.flazr.rtmp.message.MessageType;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import org.red5.server.api.event.IEventListener;
 import org.red5.server.net.rtmp.event.IRTMPEvent;
 import org.red5.server.net.rtmp.message.SharedObjectTypeMapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.flazr.amf.Amf0Value;
-import com.flazr.rtmp.RtmpHeader;
-import com.flazr.rtmp.message.AbstractMessage;
-import com.flazr.rtmp.message.MessageType;
+import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Shared object event
@@ -100,7 +94,7 @@ public class SharedObjectMessage extends AbstractMessage implements ISharedObjec
 		this.events = new ConcurrentLinkedQueue<ISharedObjectEvent>();
 	}
 	
-	public SharedObjectMessage(RtmpHeader header, ChannelBuffer in) {
+	public SharedObjectMessage(RtmpHeader header, ByteBuf in) {
 		super(header, in);
 	}
 
@@ -208,14 +202,14 @@ public class SharedObjectMessage extends AbstractMessage implements ISharedObjec
 	 * @param out
 	 * @param s
 	 */
-	void encodeString(ChannelBuffer out, String s) {
+	void encodeString(ByteBuf out, String s) {
 		out.writeShort((short) s.length());
 		out.writeBytes(s.getBytes());
 	}
 	
 	@Override
-	public ChannelBuffer encode() {
-        ChannelBuffer out = ChannelBuffers.dynamicBuffer();
+	public ByteBuf encode() {
+        ByteBuf out = Unpooled.buffer();
         encodeString(out, name);
         // SO version
         out.writeInt(version);
@@ -348,7 +342,7 @@ public class SharedObjectMessage extends AbstractMessage implements ISharedObjec
 	 * @param in
 	 * @return a decoded string
 	 */
-	String decodeString(ChannelBuffer in) {
+	String decodeString(ByteBuf in) {
 		int length = in.readShort();
 		byte[] str = new byte[length];
 		in.readBytes(str);
@@ -356,7 +350,7 @@ public class SharedObjectMessage extends AbstractMessage implements ISharedObjec
 	}
 	
 	@Override
-	public void decode(ChannelBuffer in) {
+	public void decode(ByteBuf in) {
 		name = decodeString(in);
 		version = in.readInt();
 		persistent = in.readInt() == 2;

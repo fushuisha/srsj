@@ -19,16 +19,15 @@
 
 package com.flazr.rtmp.message;
 
+import com.flazr.amf.Amf0Object;
+import com.flazr.rtmp.RtmpHeader;
+import com.flazr.rtmp.client.ClientOptions;
+import io.netty.buffer.ByteBuf;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-
-import org.jboss.netty.buffer.ChannelBuffer;
-
-import com.flazr.amf.Amf0Object;
-import com.flazr.rtmp.RtmpHeader;
-import com.flazr.rtmp.client.ClientOptions;
 
 public abstract class Command extends AbstractMessage {
     
@@ -37,7 +36,7 @@ public abstract class Command extends AbstractMessage {
     protected Amf0Object object;
     protected Object[] args;
 
-    public Command(RtmpHeader header, ChannelBuffer in) {
+    public Command(RtmpHeader header, ByteBuf in) {
         super(header, in);
     }
     

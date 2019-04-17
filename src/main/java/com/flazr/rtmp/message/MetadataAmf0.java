@@ -21,10 +21,11 @@ package com.flazr.rtmp.message;
 
 import com.flazr.amf.Amf0Value;
 import com.flazr.rtmp.RtmpHeader;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+
 import java.util.ArrayList;
 import java.util.List;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
 
 public class MetadataAmf0 extends Metadata {        
 
@@ -32,7 +33,7 @@ public class MetadataAmf0 extends Metadata {
         super(name, data);
     }
 
-    public MetadataAmf0(RtmpHeader header, ChannelBuffer in) {
+    public MetadataAmf0(RtmpHeader header, ByteBuf in) {
         super(header, in);
     }
 
@@ -42,18 +43,18 @@ public class MetadataAmf0 extends Metadata {
     }
 
     @Override
-    public ChannelBuffer encode() {
-        ChannelBuffer out = ChannelBuffers.dynamicBuffer();
+    public ByteBuf encode() {
+        ByteBuf out = Unpooled.buffer();
         Amf0Value.encode(out, name);
         Amf0Value.encode(out, data);
         return out;
     }
 
     @Override
-    public void decode(ChannelBuffer in) {
+    public void decode(ByteBuf in) {
         name = (String) Amf0Value.decode(in);
         List<Object> list = new ArrayList<Object>();
-        while(in.readable()) {
+        while(in.isReadable()) {
             list.add(Amf0Value.decode(in));
         }
         data = list.toArray();

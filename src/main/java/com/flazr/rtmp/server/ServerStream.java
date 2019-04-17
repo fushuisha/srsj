@@ -20,13 +20,15 @@ package com.flazr.rtmp.server;
 
 import com.flazr.rtmp.RtmpMessage;
 import com.flazr.util.Utils;
-import java.util.ArrayList;
-import java.util.List;
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.group.ChannelGroup;
-import org.jboss.netty.channel.group.DefaultChannelGroup;
+import io.netty.channel.Channel;
+import io.netty.channel.group.ChannelGroup;
+import io.netty.channel.group.DefaultChannelGroup;
+import io.netty.util.concurrent.DefaultEventExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class ServerStream {
 
@@ -45,7 +47,7 @@ public class ServerStream {
         }
 
     }
-    
+
     private final String name;
     private final PublishType publishType;
     private final ChannelGroup subscribers;
@@ -54,11 +56,11 @@ public class ServerStream {
 
     private static final Logger logger = LoggerFactory.getLogger(ServerStream.class);
 
-    public ServerStream(final String rawName, final String typeString) {        
+    public ServerStream(final String rawName, final String typeString) {
         this.name = Utils.trimSlashes(rawName).toLowerCase();
-        if(typeString != null) {
+        if (typeString != null) {
             this.publishType = PublishType.parse(typeString); // TODO record, append
-            subscribers = new DefaultChannelGroup(name);
+            subscribers = new DefaultChannelGroup(name, new DefaultEventExecutor());
             configMessages = new ArrayList<RtmpMessage>();
         } else {
             this.publishType = null;
@@ -104,7 +106,7 @@ public class ServerStream {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder();        
+        final StringBuilder sb = new StringBuilder();
         sb.append("[name: '").append(name);
         sb.append("' type: ").append(publishType);
         sb.append(" publisher: ").append(publisher);

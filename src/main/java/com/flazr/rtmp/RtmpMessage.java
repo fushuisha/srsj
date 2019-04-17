@@ -19,14 +19,14 @@
 
 package com.flazr.rtmp;
 
-import org.jboss.netty.buffer.ChannelBuffer;
+import io.netty.buffer.ByteBuf;
 
 public interface RtmpMessage {
 
     RtmpHeader getHeader();
     
-    ChannelBuffer encode();
+    ByteBuf encode();
 
-    void decode(ChannelBuffer in);
+    void decode(ByteBuf in);
 
 }

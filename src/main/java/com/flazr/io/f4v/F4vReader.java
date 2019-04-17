@@ -30,11 +30,12 @@ import com.flazr.rtmp.message.Audio;
 import com.flazr.rtmp.message.Metadata;
 import com.flazr.rtmp.message.Video;
 import com.flazr.util.Utils;
-import java.util.List;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 public class F4vReader implements RtmpReader {
 
@@ -126,7 +127,7 @@ public class F4vReader implements RtmpReader {
         if(aggregateDuration <= 0) {
             return getMessage(samples.get(cursor++));
         }
-        final ChannelBuffer out = ChannelBuffers.dynamicBuffer();
+        final ByteBuf out = Unpooled.buffer();
         int startSampleTime = -1;
         while(cursor < samples.size()) {
             final Sample sample = samples.get(cursor++);
@@ -136,7 +137,7 @@ public class F4vReader implements RtmpReader {
             final RtmpMessage message = getMessage(sample);
             final RtmpHeader header = message.getHeader();
             final FlvAtom flvAtom = new FlvAtom(header.getMessageType(), header.getTime(), message.encode());
-            final ChannelBuffer temp = flvAtom.write();
+            final ByteBuf temp = flvAtom.write();
             if(out.readableBytes() + temp.readableBytes() > AGGREGATE_SIZE_LIMIT) {
                 cursor--;
                 break;

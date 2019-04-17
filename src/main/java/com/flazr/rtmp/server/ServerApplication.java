@@ -25,17 +25,12 @@ import com.flazr.io.flv.FlvWriter;
 import com.flazr.rtmp.RtmpConfig;
 import com.flazr.rtmp.RtmpReader;
 import com.flazr.rtmp.RtmpWriter;
-import com.flazr.rtmp.message.Audio;
-import com.flazr.rtmp.message.Command;
-import com.flazr.rtmp.message.Metadata;
-import com.flazr.rtmp.message.Video;
 import com.flazr.util.Utils;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
-import org.jboss.netty.channel.group.ChannelGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ServerApplication {
 

@@ -19,7 +19,7 @@
 
 package com.flazr.io;
 
-import org.jboss.netty.buffer.ChannelBuffer;
+import io.netty.buffer.ByteBuf;
 
 public interface BufferReader {
 
@@ -29,7 +29,7 @@ public interface BufferReader {
 
     void position(long position);
 
-    ChannelBuffer read(int size);
+    ByteBuf read(int size);
 
     byte[] readBytes(int size);
 

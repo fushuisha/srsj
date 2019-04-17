@@ -19,17 +19,16 @@
 
 package com.flazr.io.flv;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.nio.channels.FileChannel;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.flazr.rtmp.RtmpHeader;
 import com.flazr.rtmp.RtmpMessage;
 import com.flazr.rtmp.RtmpWriter;
-import org.jboss.netty.buffer.ChannelBuffer;
+import io.netty.buffer.ByteBuf;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.nio.channels.FileChannel;
 
 public class FlvWriter implements RtmpWriter {
 
@@ -58,7 +57,7 @@ public class FlvWriter implements RtmpWriter {
             File file = new File(fileName);
             FileOutputStream fos = new FileOutputStream(file);
             out = fos.getChannel();
-            out.write(FlvAtom.flvHeader().toByteBuffer());
+            out.write(FlvAtom.flvHeader().nioBuffer());
             logger.info("opened file for writing: {}", file.getAbsolutePath());
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -96,8 +95,8 @@ public class FlvWriter implements RtmpWriter {
     public void write(final RtmpMessage message) {
         final RtmpHeader header = message.getHeader();
         if(header.isAggregate()) {
-            final ChannelBuffer in = message.encode();
-            while (in.readable()) {
+            final ByteBuf in = message.encode();
+            while (in.isReadable()) {
                 final FlvAtom flvAtom = new FlvAtom(in);
                 final int absoluteTime = flvAtom.getHeader().getTime();
                 channelTimes[primaryChannel] = absoluteTime;
@@ -130,7 +129,7 @@ public class FlvWriter implements RtmpWriter {
             return;
         }
         try {
-            out.write(flvAtom.write().toByteBuffer());
+            out.write(flvAtom.write().nioBuffer());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

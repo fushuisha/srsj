@@ -20,11 +20,12 @@
 package com.flazr.rtmp.message;
 
 import com.flazr.amf.Amf0Object;
-import com.flazr.rtmp.RtmpMessage;
 import com.flazr.rtmp.RtmpHeader;
+import com.flazr.rtmp.RtmpMessage;
+import io.netty.buffer.ByteBuf;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
-import org.jboss.netty.buffer.ChannelBuffer;
 
 public abstract class AbstractMessage implements RtmpMessage {
     
@@ -34,7 +35,7 @@ public abstract class AbstractMessage implements RtmpMessage {
         header = new RtmpHeader(getMessageType());
     }
 
-    public AbstractMessage(RtmpHeader header, ChannelBuffer in) {
+    public AbstractMessage(RtmpHeader header, ByteBuf in) {
         this.header = header;
         decode(in);
     }

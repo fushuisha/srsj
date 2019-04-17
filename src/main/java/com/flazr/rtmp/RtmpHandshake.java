@@ -21,6 +21,17 @@ package com.flazr.rtmp;
 
 import com.flazr.rtmp.client.ClientOptions;
 import com.flazr.util.Utils;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.crypto.Cipher;
+import javax.crypto.KeyAgreement;
+import javax.crypto.interfaces.DHPublicKey;
+import javax.crypto.spec.DHParameterSpec;
+import javax.crypto.spec.DHPublicKeySpec;
+import javax.crypto.spec.SecretKeySpec;
 import java.math.BigInteger;
 import java.security.KeyFactory;
 import java.security.KeyPair;
@@ -31,16 +42,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
-import javax.crypto.Cipher;
-import javax.crypto.KeyAgreement;
-import javax.crypto.interfaces.DHPublicKey;
-import javax.crypto.spec.DHParameterSpec;
-import javax.crypto.spec.DHPublicKeySpec;
-import javax.crypto.spec.SecretKeySpec;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class RtmpHandshake {
 
@@ -83,7 +84,7 @@ public class RtmpHandshake {
         return c;
     }
 
-    private static int calculateOffset(ChannelBuffer in, int pointerIndex, int modulus, int increment) {
+    private static int calculateOffset(ByteBuf in, int pointerIndex, int modulus, int increment) {
         byte[] pointer = new byte[4];
         in.getBytes(pointerIndex, pointer);
         int offset = 0;
@@ -96,7 +97,7 @@ public class RtmpHandshake {
         return offset;
     }
 
-    private static byte[] digestHandshake(ChannelBuffer in, int digestOffset, byte[] key) {
+    private static byte[] digestHandshake(ByteBuf in, int digestOffset, byte[] key) {
         final byte[] message = new byte[HANDSHAKE_SIZE - DIGEST_SIZE];
         in.getBytes(0, message, 0, digestOffset);
         final int afterDigestOffset = digestOffset + DIGEST_SIZE;
@@ -104,11 +105,11 @@ public class RtmpHandshake {
         return Utils.sha256(message, key);
     }
 
-    private static ChannelBuffer generateRandomHandshake() {
+    private static ByteBuf generateRandomHandshake() {
         byte[] randomBytes = new byte[HANDSHAKE_SIZE];
         Random random = new Random();
         random.nextBytes(randomBytes);
-        return ChannelBuffers.wrappedBuffer(randomBytes);
+        return Unpooled.wrappedBuffer(randomBytes);
     }
 
     private static final Map<Integer, Integer> clientVersionToValidationTypeMap;
@@ -128,7 +129,7 @@ public class RtmpHandshake {
     }
 
     protected static int getValidationTypeForClientVersion(byte[] version) {
-        final int intValue = ChannelBuffers.wrappedBuffer(version).getInt(0);
+        final int intValue = Unpooled.wrappedBuffer(version).getInt(0);
         Integer type = clientVersionToValidationTypeMap.get(intValue);
         if(type == null) {
             return 0;
@@ -140,7 +141,7 @@ public class RtmpHandshake {
 
     private byte[] serverVersionToUse = new byte[]{0x03, 0x05, 0x01, 0x01};
 
-    private static int digestOffset(ChannelBuffer in, int validationType) {
+    private static int digestOffset(ByteBuf in, int validationType) {
         switch(validationType) {
             case 1: return calculateOffset(in, 8, 728, 12);
             case 2: return calculateOffset(in, 772, 728, 776);
@@ -148,7 +149,7 @@ public class RtmpHandshake {
         }
     }
 
-    private static int publicKeyOffset(ChannelBuffer in, int validationType) {
+    private static int publicKeyOffset(ByteBuf in, int validationType) {
         switch(validationType) {
             case 1: return calculateOffset(in, 1532, 632, 772);
             case 2: return calculateOffset(in, 768, 632, 8);
@@ -175,8 +176,8 @@ public class RtmpHandshake {
     private int swfSize;
     private byte[] swfvBytes;
 
-    private ChannelBuffer peerPartOne;
-    private ChannelBuffer ownPartOne;
+    private ByteBuf peerPartOne;
+    private ByteBuf ownPartOne;
 
     public RtmpHandshake() {}
 
@@ -211,7 +212,7 @@ public class RtmpHandshake {
 
     //========================= ENCRYPT / DECRYPT ==============================
 
-    private void cipherUpdate(final ChannelBuffer in, final Cipher cipher) {
+    private void cipherUpdate(final ByteBuf in, final Cipher cipher) {
         final int size = in.readableBytes();
         if(size == 0) {
             return;
@@ -222,11 +223,11 @@ public class RtmpHandshake {
         in.setBytes(position, cipher.update(bytes));
     }
 
-    public void cipherUpdateIn(final ChannelBuffer in) {
+    public void cipherUpdateIn(final ByteBuf in) {
         cipherUpdate(in, cipherIn);
     }
 
-    public void cipherUpdateOut(final ChannelBuffer in) {
+    public void cipherUpdateOut(final ByteBuf in) {
         cipherUpdate(in, cipherOut);
     }
 
@@ -295,8 +296,8 @@ public class RtmpHandshake {
 
     //============================== CLIENT ====================================
 
-    public ChannelBuffer encodeClient0() {
-        ChannelBuffer out = ChannelBuffers.buffer(1);
+    public ByteBuf encodeClient0() {
+        ByteBuf out = Unpooled.buffer(1);
         if (rtmpe) {
             out.writeByte((byte) 0x06);
         } else {
@@ -305,8 +306,8 @@ public class RtmpHandshake {
         return out;
     }
 
-    public ChannelBuffer encodeClient1() {
-        ChannelBuffer out = generateRandomHandshake();
+    public ByteBuf encodeClient1() {
+        ByteBuf out = generateRandomHandshake();
         out.setInt(0, 0); // zeros
         out.setBytes(4, clientVersionToUse);
         validationType = getValidationTypeForClientVersion(clientVersionToUse);
@@ -325,14 +326,14 @@ public class RtmpHandshake {
         return out;
     }
 
-    public boolean decodeServerAll(ChannelBuffer in) {
+    public boolean decodeServerAll(ByteBuf in) {
         decodeServer0(in.readBytes(1));
         decodeServer1(in.readBytes(HANDSHAKE_SIZE));
         decodeServer2(in.readBytes(HANDSHAKE_SIZE));
         return true;
     }
 
-    private void decodeServer0(ChannelBuffer in) {
+    private void decodeServer0(ByteBuf in) {
         byte flag = in.getByte(0);
         if(rtmpe &&  flag != 0x06) {
             logger.warn("server does not support rtmpe! falling back to rtmp");
@@ -340,7 +341,7 @@ public class RtmpHandshake {
         }
     }
 
-    private void decodeServer1(ChannelBuffer in) {
+    private void decodeServer1(ByteBuf in) {
         peerTime = new byte[4];
         in.getBytes(0, peerTime);
         byte[] serverVersion = new byte[4];
@@ -352,7 +353,7 @@ public class RtmpHandshake {
             in.getBytes(HANDSHAKE_SIZE - DIGEST_SIZE, key);
             byte[] digest = Utils.sha256(swfHash, key);
             // construct SWF verification pong payload
-            ChannelBuffer swfv = ChannelBuffers.buffer(42);
+            ByteBuf swfv = Unpooled.buffer(42);
             swfv.writeByte((byte) 0x01);
             swfv.writeByte((byte) 0x01);
             swfv.writeInt(swfSize);
@@ -391,7 +392,7 @@ public class RtmpHandshake {
         initCiphers();
     }
 
-    private void decodeServer2(ChannelBuffer in) {
+    private void decodeServer2(ByteBuf in) {
         if(validationType == 0) {
             return; // TODO validate random echo
         }
@@ -407,14 +408,14 @@ public class RtmpHandshake {
         logger.info("server part 2 validation success");
     }
 
-    public ChannelBuffer encodeClient2() {
+    public ByteBuf encodeClient2() {
         if(validationType == 0) {
             peerPartOne.setBytes(0, peerTime);
             peerPartOne.setInt(4, 0); // more zeros
             return peerPartOne;
         }
         logger.debug("creating client part 2 for validation");
-        ChannelBuffer out = generateRandomHandshake();
+        ByteBuf out = generateRandomHandshake();
         byte[] key = Utils.sha256(peerPartOneDigest, CLIENT_CONST_CRUD);
         int digestOffset = HANDSHAKE_SIZE - DIGEST_SIZE;
         byte[] digest = digestHandshake(out, digestOffset, key);
@@ -424,18 +425,18 @@ public class RtmpHandshake {
 
     //============================ SERVER ======================================
 
-    public void decodeClient0And1(ChannelBuffer in) {
+    public void decodeClient0And1(ByteBuf in) {
         decodeClient0(in.readBytes(1));
         decodeClient1(in.readBytes(HANDSHAKE_SIZE));
     }
 
-    private void decodeClient0(ChannelBuffer in) {
+    private void decodeClient0(ByteBuf in) {
         final byte firstByte = in.readByte();
         rtmpe = firstByte == 0x06;
         logger.debug("client first byte {}, rtmpe: {}", Utils.toHex(firstByte), rtmpe);
     }
 
-    private boolean decodeClient1(ChannelBuffer in) {
+    private boolean decodeClient1(ByteBuf in) {
         peerTime = new byte[4];
         in.getBytes(0, peerTime);
         peerVersion = new byte[4];
@@ -463,14 +464,14 @@ public class RtmpHandshake {
         return true;
     }
 
-    public ChannelBuffer encodeServer0() {
-        ChannelBuffer out = ChannelBuffers.buffer(1);
+    public ByteBuf encodeServer0() {
+        ByteBuf out = Unpooled.buffer(1);
         out.writeByte((byte) (rtmpe ? 0x06 : 0x03));
         return out;
     }
 
-    public ChannelBuffer encodeServer1() {
-        ChannelBuffer out = generateRandomHandshake();
+    public ByteBuf encodeServer1() {
+        ByteBuf out = generateRandomHandshake();
         out.setInt(0, 0); // zeros
         out.setBytes(4, serverVersionToUse);
         if(validationType == 0) {
@@ -486,8 +487,8 @@ public class RtmpHandshake {
         return out;
     }
 
-    public void decodeClient2(ChannelBuffer raw) {
-        ChannelBuffer in = raw.readBytes(HANDSHAKE_SIZE);
+    public void decodeClient2(ByteBuf raw) {
+        ByteBuf in = raw.readBytes(HANDSHAKE_SIZE);
         if(validationType == 0) {
             return;
         }
@@ -503,14 +504,14 @@ public class RtmpHandshake {
         logger.info("client part 2 validation success");
     }
 
-    public ChannelBuffer encodeServer2() {
+    public ByteBuf encodeServer2() {
         if(validationType == 0) {
             peerPartOne.setBytes(0, peerTime); // zeros
             peerPartOne.setInt(4, 0); // more zeros
             return peerPartOne;
         }
         logger.debug("creating server part 2 for validation");
-        ChannelBuffer out = generateRandomHandshake();
+        ByteBuf out = generateRandomHandshake();
         byte[] key = Utils.sha256(peerPartOneDigest, SERVER_CONST_CRUD);
         int digestOffset = HANDSHAKE_SIZE - DIGEST_SIZE;
         byte[] digest = digestHandshake(out, digestOffset, key);

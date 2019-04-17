@@ -19,7 +19,7 @@
 
 package com.flazr.io.flv;
 
-import org.jboss.netty.buffer.ChannelBuffer;
+import io.netty.buffer.ByteBuf;
 
 public class H263Packet {
 
@@ -34,7 +34,7 @@ public class H263Packet {
         return height;
     }
 
-    public H263Packet(final ChannelBuffer in, final int offset) {
+    public H263Packet(final ByteBuf in, final int offset) {
         // 0000 0000 | 0000 0000 | 1---
         // picture start code (0, 17)
         // ---- ---- | ---- ---- | -000 00-- |

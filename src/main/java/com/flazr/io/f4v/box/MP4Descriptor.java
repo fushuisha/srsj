@@ -19,9 +19,8 @@
 
 package com.flazr.io.f4v.box;
 
-import org.jboss.netty.buffer.ChannelBuffer;
-
 import com.flazr.util.Utils;
+import io.netty.buffer.ByteBuf;
 
 /**
  * thanks to Paul Kendall for the patch !
@@ -33,11 +32,11 @@ public class MP4Descriptor {
     public final static int DECODER_SPECIFIC_CONFIG = 5;
     private byte[] decoderSpecificConfig = Utils.fromHex("af0013100000");
 
-    public MP4Descriptor(ChannelBuffer in) {
+    public MP4Descriptor(ByteBuf in) {
         final int size = in.readInt();
         in.readInt(); // TODO check that this is in-fact "esds"
         in.readInt(); // version and flags
-        while (in.readable()) {
+        while (in.isReadable()) {
             readDescriptor(in, size - 12);
         }
     }
@@ -46,7 +45,7 @@ public class MP4Descriptor {
         return decoderSpecificConfig;
     }
 
-    private int readDescriptor(ChannelBuffer bitstream, int length) {
+    private int readDescriptor(ByteBuf bitstream, int length) {
         final int tag = bitstream.readByte();
         int size = 0;
         int b = 0;
@@ -70,7 +69,7 @@ public class MP4Descriptor {
         }
     }
 
-    private int parseES(ChannelBuffer bitstream, int length) {
+    private int parseES(ByteBuf bitstream, int length) {
         int read = 3;
         int ES_ID = bitstream.readShort();
         int flags = bitstream.readByte();
@@ -96,7 +95,7 @@ public class MP4Descriptor {
         return read;
     }
 
-    private int parseDecoderConfig(ChannelBuffer bitstream, int length) {
+    private int parseDecoderConfig(ByteBuf bitstream, int length) {
         final int objectTypeIndication = bitstream.readByte();
         int value = bitstream.readByte();
         final boolean upstream = (value & (1 << 1)) > 0;
@@ -114,7 +113,7 @@ public class MP4Descriptor {
         return read;
     }
 
-    private int parseDecoderSpecificConfig(ChannelBuffer bitstream, int size, int length) {
+    private int parseDecoderSpecificConfig(ByteBuf bitstream, int size, int length) {
         decoderSpecificConfig = new byte[size];
         bitstream.readBytes(decoderSpecificConfig);
         return size;

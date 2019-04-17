@@ -19,20 +19,9 @@ package org.red5.server.so;
  * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA 
  */
 
-import static org.red5.server.api.so.ISharedObject.TYPE;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.channel.Channel;
+import com.flazr.rtmp.RtmpHeader;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
 import org.red5.server.AttributeStore;
 import org.red5.server.api.IAttributeStore;
 import org.red5.server.api.event.IEventListener;
@@ -43,7 +32,13 @@ import org.red5.server.so.ISharedObjectEvent.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.flazr.rtmp.RtmpHeader;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.red5.server.api.so.ISharedObject.TYPE;
 
 /**
  * Represents shared object on server-side. Shared Objects in Flash are like cookies that are stored
@@ -177,7 +172,7 @@ public class SharedObject extends AttributeStore implements ISharedObjectStatist
 	/**
 	 * Constructs new SO from a received message (header + buffer)
 	 */
-	public SharedObject(RtmpHeader header, ChannelBuffer in) {
+	public SharedObject(RtmpHeader header, ByteBuf in) {
 		ownerMessage = new SharedObjectMessage(header, in);
 		creationTime = System.currentTimeMillis();
 	}

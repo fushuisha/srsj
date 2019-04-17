@@ -22,14 +22,15 @@ package com.flazr.rtmp.message;
 import com.flazr.amf.Amf0Object;
 import com.flazr.amf.Amf0Value;
 import com.flazr.rtmp.RtmpHeader;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+
 import java.util.ArrayList;
 import java.util.List;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
 
 public class CommandAmf0 extends Command {    
 
-    public CommandAmf0(RtmpHeader header, ChannelBuffer in) {
+    public CommandAmf0(RtmpHeader header, ByteBuf in) {
         super(header, in);        
     }
 
@@ -47,8 +48,8 @@ public class CommandAmf0 extends Command {
     }
 
     @Override
-    public ChannelBuffer encode() {
-        ChannelBuffer out = ChannelBuffers.dynamicBuffer();
+    public ByteBuf encode() {
+        ByteBuf out = Unpooled.buffer();
         Amf0Value.encode(out, name, transactionId, object);
         if(args != null) {
             for(Object o : args) {
@@ -59,12 +60,12 @@ public class CommandAmf0 extends Command {
     }
 
     @Override
-    public void decode(ChannelBuffer in) {                
+    public void decode(ByteBuf in) {                
         name = (String) Amf0Value.decode(in);
         transactionId = ((Double) Amf0Value.decode(in)).intValue();
         object = (Amf0Object) Amf0Value.decode(in);
         List<Object> list = new ArrayList<Object>();
-        while(in.readable()) {
+        while(in.isReadable()) {
             list.add(Amf0Value.decode(in));
         }
         args = list.toArray();

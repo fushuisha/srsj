@@ -19,14 +19,14 @@
 
 package com.flazr.io.f4v.box;
 
-import com.flazr.io.f4v.*;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
+import com.flazr.io.f4v.Payload;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class STSZ implements Payload {
 
@@ -34,7 +34,7 @@ public class STSZ implements Payload {
     private List<Integer> sampleSizes;
     private int constantSize;
 
-    public STSZ(ChannelBuffer in) {
+    public STSZ(ByteBuf in) {
         read(in);
     }
 
@@ -51,7 +51,7 @@ public class STSZ implements Payload {
     }
 
     @Override
-    public void read(ChannelBuffer in) {
+    public void read(ByteBuf in) {
         in.readInt(); // UI8 version + UI24 flags
         constantSize = in.readInt();
         logger.debug("sample size constant size: {}", constantSize);
@@ -66,8 +66,8 @@ public class STSZ implements Payload {
     }
 
     @Override
-    public ChannelBuffer write() {
-        ChannelBuffer out = ChannelBuffers.dynamicBuffer();
+    public ByteBuf write() {
+        ByteBuf out = Unpooled.buffer();
         out.writeInt(0); // UI8 version + UI24 flags
         out.writeInt(constantSize);
         out.writeInt(sampleSizes.size());

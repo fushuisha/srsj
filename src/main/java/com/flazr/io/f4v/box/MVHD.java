@@ -19,13 +19,12 @@
 
 package com.flazr.io.f4v.box;
 
-import com.flazr.io.f4v.*;
+import com.flazr.io.f4v.Payload;
+import com.flazr.util.Utils;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.flazr.util.Utils;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
 
 public class MVHD implements Payload {
 
@@ -45,7 +44,7 @@ public class MVHD implements Payload {
     private int[] reserved3; // 6
     private int nextTrackId;
 
-    public MVHD(ChannelBuffer in) {
+    public MVHD(ByteBuf in) {
         read(in);
     }
 
@@ -62,7 +61,7 @@ public class MVHD implements Payload {
     }
 
     @Override
-    public void read(ChannelBuffer in) {
+    public void read(ByteBuf in) {
         version = in.readByte();
         logger.debug("version: {}", Utils.toHex(version));
         flags = new byte[3];
@@ -101,8 +100,8 @@ public class MVHD implements Payload {
     }
 
     @Override
-    public ChannelBuffer write() {
-        ChannelBuffer out = ChannelBuffers.dynamicBuffer();
+    public ByteBuf write() {
+        ByteBuf out = Unpooled.buffer();
         out.writeByte(version);
         out.writeBytes(new byte[3]); // flags
         if (version == 0x00) {

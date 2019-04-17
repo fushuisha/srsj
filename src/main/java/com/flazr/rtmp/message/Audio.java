@@ -19,11 +19,12 @@
 
 package com.flazr.rtmp.message;
 
-import java.nio.ByteOrder;
-
 import com.flazr.rtmp.RtmpHeader;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
+import io.netty.buffer.Unpooled;
+
+import java.nio.ByteOrder;
 
 public class Audio extends DataMessage {
 
@@ -38,7 +39,7 @@ public class Audio extends DataMessage {
 //        return true;
     }
 
-    public Audio(final RtmpHeader header, final ChannelBuffer in) {
+    public Audio(final RtmpHeader header, final ByteBuf in) {
         super(header, in);
     }
 
@@ -48,17 +49,17 @@ public class Audio extends DataMessage {
 
     public Audio(final int time, final byte[] prefix, final byte[] audioData) {
         header.setTime(time);
-        data = ChannelBuffers.wrappedBuffer(prefix, audioData);
+        data = Unpooled.wrappedBuffer(prefix, audioData);
         header.setSize(data.readableBytes());
     }
 
-    public Audio(final int time, final ChannelBuffer in) {
+    public Audio(final int time, final ByteBuf in) {
         super(time, in);
     }
     
     public static Audio empty() {
         Audio empty = new Audio();
-        empty.data = ChannelBuffers.EMPTY_BUFFER;
+        empty.data = Unpooled.EMPTY_BUFFER;
         return empty;
     }
 
@@ -68,12 +69,14 @@ public class Audio extends DataMessage {
     }
     
 	public byte[] getByteArray() {
-		return data.toByteBuffer().array();
+//		return data.toByteBuffer().array();
+        return data.nioBuffer().array();
 	}
 
 	public short[] getShortArray() {
 		short[] shortArray = new short[data.array().length / 2];
-		data.toByteBuffer().order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().get(shortArray);
+//		data.toByteBuffer().order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().get(shortArray);
+        data.nioBuffer().order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().get(shortArray);
 		return shortArray;
 	}
 }

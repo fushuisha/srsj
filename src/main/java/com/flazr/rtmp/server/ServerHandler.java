@@ -19,40 +19,22 @@
 
 package com.flazr.rtmp.server;
 
-import com.flazr.rtmp.message.BytesRead;
-import com.flazr.rtmp.message.ChunkSize;
-import com.flazr.rtmp.message.Control;
 import com.flazr.rtmp.RtmpMessage;
-import com.flazr.rtmp.RtmpReader;
 import com.flazr.rtmp.RtmpPublisher;
+import com.flazr.rtmp.RtmpReader;
 import com.flazr.rtmp.RtmpWriter;
-import com.flazr.rtmp.message.Audio;
-import com.flazr.rtmp.message.Command;
-import com.flazr.rtmp.message.DataMessage;
-import com.flazr.rtmp.message.Metadata;
-import com.flazr.rtmp.message.SetPeerBw;
-import com.flazr.rtmp.message.Video;
-import com.flazr.rtmp.message.WindowAckSize;
-
+import com.flazr.rtmp.message.*;
 import com.flazr.util.ChannelUtils;
-import java.util.ArrayList;
-import java.util.List;
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelFuture;
-import org.jboss.netty.channel.ChannelFutureListener;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.ChannelPipelineCoverage;
-import org.jboss.netty.channel.ChannelStateEvent;
-import org.jboss.netty.channel.ExceptionEvent;
-import org.jboss.netty.channel.MessageEvent;
-import org.jboss.netty.channel.SimpleChannelHandler;
-import org.jboss.netty.channel.WriteCompletionEvent;
-import org.jboss.netty.channel.group.ChannelGroup;
+import io.netty.channel.*;
+import io.netty.channel.group.ChannelGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@ChannelPipelineCoverage("one")
-public class ServerHandler extends SimpleChannelHandler {
+import java.util.ArrayList;
+import java.util.List;
+
+//@ChannelPipelineCoverage("one")
+public class ServerHandler extends SimpleChannelInboundHandler {
     
     private static final Logger logger = LoggerFactory.getLogger(ServerHandler.class);
         
@@ -81,19 +63,21 @@ public class ServerHandler extends SimpleChannelHandler {
     }
 
     @Override
-    public void channelOpen(final ChannelHandlerContext ctx, final ChannelStateEvent e) {
-        RtmpServer.CHANNELS.add(e.getChannel());
-        logger.info("opened channel: {}", e);
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        RtmpServer.CHANNELS.add(ctx.channel());
+        logger.info("opened channel: {}", ctx.channel());
     }
 
-    @Override
-    public void exceptionCaught(final ChannelHandlerContext ctx, final ExceptionEvent e) {
-        ChannelUtils.exceptionCaught(e);
-    }
+
+@Override
+public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
+        throws Exception {
+    ChannelUtils.exceptionCaught(cause);
+}
 
     @Override
-    public void channelClosed(final ChannelHandlerContext ctx, final ChannelStateEvent e) {
-        logger.info("channel closed: {}", e);
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        logger.info("channel closed: {}", ctx.channel());
         if(publisher != null) {
             publisher.close();
         }
@@ -103,19 +87,21 @@ public class ServerHandler extends SimpleChannelHandler {
         unpublishIfLive();
     }
 
-    @Override
-    public void writeComplete(final ChannelHandlerContext ctx, final WriteCompletionEvent e) throws Exception {
-        bytesWritten += e.getWrittenAmount();        
-        super.writeComplete(ctx, e);
-    }
+//    @Override
+//    public void writeComplete(final ChannelHandlerContext ctx, final WriteCompletionEvent e) throws Exception {
+//        bytesWritten += e.getWrittenAmount();
+//        super.writeComplete(ctx, e);
+//    }
+
+
 
     @Override
-    public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent me) {
-        if(publisher != null && publisher.handle(me)) {
+    protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
+        if(publisher != null && publisher.handle(ctx,msg)) {
             return;
         }
-        final Channel channel = me.getChannel();
-        final RtmpMessage message = (RtmpMessage) me.getMessage();
+        final Channel channel = ctx.channel();
+        final RtmpMessage message = (RtmpMessage) msg;
         bytesRead += message.getHeader().getSize();
         if((bytesRead - bytesReadLastSent) > bytesReadWindow) {
             logger.info("sending bytes read ack after: {}", bytesRead);
@@ -150,7 +136,7 @@ public class ServerHandler extends SimpleChannelHandler {
                     streamId = 1;
                     channel.write(Command.createStreamSuccess(command.getTransactionId(), streamId));
                 } else if(name.equals("play")) {
-                    playResponse(channel, command);
+                    playResponse(ctx, command);
                 } else if(name.equals("deleteStream")) {
                     int deleteStreamId = ((Double) command.getArg(0)).intValue();
                     logger.info("deleting stream id: {}", deleteStreamId);
@@ -160,15 +146,16 @@ public class ServerHandler extends SimpleChannelHandler {
                     logger.info("closing stream id: {}", clientStreamId); // TODO
                     unpublishIfLive();
                 } else if(name.equals("pause")) {                    
-                    pauseResponse(channel, command);
+                    pauseResponse(ctx, command);
                 } else if(name.equals("seek")) {                    
-                    seekResponse(channel, command);
+                    seekResponse(ctx, command);
                 } else if(name.equals("publish")) {
                     publishResponse(channel, command);
                 } else {
                     logger.warn("ignoring command: {}", command);
-                    fireNext(channel);
+                    fireNext(ctx);
                 }
+                ctx.flush();
                 return; // NOT break
             case METADATA_AMF0:
             case METADATA_AMF3:
@@ -209,12 +196,12 @@ public class ServerHandler extends SimpleChannelHandler {
             default:
             logger.warn("ignoring message: {}", message);
         }
-        fireNext(channel);
+        fireNext(ctx);
     }
 
-    private void fireNext(final Channel channel) {
+    private void fireNext(final ChannelHandlerContext ctx) {
         if(publisher != null && publisher.isStarted() && !publisher.isPaused()) {
-            publisher.fireNext(channel, 0);
+            publisher.fireNext(ctx, 0);
         }
     }
 
@@ -247,13 +234,14 @@ public class ServerHandler extends SimpleChannelHandler {
             message.getHeader().setStreamId(streamId);
         }
         channel.write(message);
+        bytesWritten += message.getHeader().getSize();
     }
 
     //==========================================================================
 
     private void connectResponse(final Channel channel, final Command connect) {
         final String appName = (String) connect.getObject().get("app");
-        clientId = channel.getId() + "";        
+        clientId = channel.id() + "";
         application = ServerApplication.get(appName); // TODO auth, validation
         logger.info("connect, client id: {}, application: {}", clientId, application);
         channel.write(new WindowAckSize(bytesWrittenWindow));
@@ -264,7 +252,7 @@ public class ServerHandler extends SimpleChannelHandler {
         channel.write(Command.onBWDone());
     }
 
-    private void playResponse(final Channel channel, final Command play) {
+    private void playResponse(final ChannelHandlerContext ctx, final Command play) {
         int playStart = -2;
         int playLength = -1;
         if(play.getArgCount() > 1) {
@@ -284,6 +272,7 @@ public class ServerHandler extends SimpleChannelHandler {
         final ServerStream stream = application.getStream(clientPlayName);
         logger.debug("play name {}, start {}, length {}, reset {}",
                 new Object[]{clientPlayName, playStart, playLength, playReset});
+        Channel channel = ctx.channel();
         if(stream.isLive()) {                  
             for(final RtmpMessage message : getStartMessages(playResetCommand)) {
                 writeToStream(channel, message);
@@ -320,10 +309,10 @@ public class ServerHandler extends SimpleChannelHandler {
                 }
             };
         }
-        publisher.start(channel, playStart, playLength, getStartMessages(playResetCommand));
+        publisher.start(ctx, playStart, playLength, getStartMessages(playResetCommand));
     }
 
-    private void pauseResponse(final Channel channel, final Command command) {
+    private void pauseResponse(final ChannelHandlerContext ctx, final Command command) {
         if(publisher == null) {
             logger.debug("cannot pause when live");
             return;
@@ -334,13 +323,13 @@ public class ServerHandler extends SimpleChannelHandler {
         if(!paused) {            
             logger.debug("doing unpause, seeking and playing");            
             final Command unpause = Command.unpauseNotify(playName, clientId);
-            publisher.start(channel, clientTimePosition, getStartMessages(unpause));
+            publisher.start(ctx, clientTimePosition, getStartMessages(unpause));
         } else {            
             publisher.pause();
         }
     }
 
-    private void seekResponse(final Channel channel, final Command command) {
+    private void seekResponse(final ChannelHandlerContext ctx, final Command command) {
         if(publisher == null) {
             logger.debug("cannot seek when live");
             return;
@@ -348,7 +337,7 @@ public class ServerHandler extends SimpleChannelHandler {
         final int clientTimePosition = ((Double) command.getArg(0)).intValue();
         if (!publisher.isPaused()) {
             final Command seekNotify = Command.seekNotify(streamId, clientTimePosition, playName, clientId);
-            publisher.start(channel, clientTimePosition, getStartMessages(seekNotify));
+            publisher.start(ctx, clientTimePosition, getStartMessages(seekNotify));
         } else {
             logger.debug("ignoring seek when paused, client time position: {}", clientTimePosition);
         }
@@ -404,6 +393,7 @@ public class ServerHandler extends SimpleChannelHandler {
             message.getHeader().setStreamId(streamId);
         }
         channelGroup.write(message);
+        bytesWritten += message.getHeader().getSize();
     }
 
     private void unpublishIfLive() {
