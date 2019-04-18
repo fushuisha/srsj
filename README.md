@@ -1,7 +1,5 @@
 # srsj
 
-------
-
 Simple Rtmp Server-Java
 
 基于flazr的java版rtmp服务器，取名srsj是蹭一下srs的热度
@@ -12,8 +10,6 @@ Simple Rtmp Server-Java
 
 ###### 0.2-SNAPSHOT
 
-------
-
 `制作中。。。`
 
 `预计完成HTTP-FLV的播放`
@@ -23,8 +19,6 @@ Simple Rtmp Server-Java
 
 
 ##### 0.1-SNAPSHOT
-
-------
 
 1. 从netty3.2.7.Final升级到netty4.1.34.Final
 
