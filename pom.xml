@@ -5,7 +5,7 @@
     <groupId>com.srsj</groupId>
     <artifactId>srsj</artifactId>
     <packaging>jar</packaging>
-    <version>0.1</version>
+    <version>0.1-SNAPSHOT</version>
     <name>srsj</name>
     <description></description>
     <url></url>
@@ -25,7 +25,7 @@
         <developer>
             <name>SanShiDi</name>
             <id>ssd</id>
-            <url></url>
+            <url>https://space.bilibili.com/7678015</url>
             <timezone>-8</timezone>
         </developer>
     </developers>
