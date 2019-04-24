@@ -5,7 +5,7 @@
     <groupId>com.srsj</groupId>
     <artifactId>srsj</artifactId>
     <packaging>jar</packaging>
-    <version>0.1-SNAPSHOT</version>
+    <version>0.2-SNAPSHOT</version>
     <name>srsj</name>
     <description></description>
     <url></url>
@@ -180,11 +180,11 @@
             <scope>test</scope>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.logback-extensions/logback-ext-spring -->
-        <dependency>
-            <groupId>org.logback-extensions</groupId>
-            <artifactId>logback-ext-spring</artifactId>
-            <version>0.1.5</version>
-        </dependency>
+        <!--<dependency>-->
+            <!--<groupId>org.logback-extensions</groupId>-->
+            <!--<artifactId>logback-ext-spring</artifactId>-->
+            <!--<version>0.1.5</version>-->
+        <!--</dependency>-->
     </dependencies>
     <dependencyManagement>
         <dependencies>

@@ -7,4 +7,5 @@ server:
 spring:
   application:
     name: service-srsj-console
-logbackConfigLocation: classpath:logback.xml
+#logbackConfigLocation: classpath:logback.xml
+logging.config: classpath:logback.xml

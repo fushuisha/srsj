@@ -15,4 +15,5 @@ eureka:
     serviceUrl:
       defaultZone: http://${HOST_NAME}:${server.port}/eureka/
 
-logbackConfigLocation: classpath:logback-prd.xml
+#logbackConfigLocation: classpath:logback-prd.xml
+logging.config: classpath:logback-prd.xml
