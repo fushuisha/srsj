@@ -54,7 +54,7 @@
     <!--<logger name="org.springframework.jdbc.core.JdbcTemplate" level="DEBUG" />-->
     <logger name="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping" level="WARN" />
     <!--<logger name="org.hibernate.cfg" level="WARN" />-->
-    <root level="DEBUG">
+    <root level="INFO">
         <appender-ref ref="console" />
         <appender-ref ref="info" />
         <appender-ref ref="warn" />

@@ -23,64 +23,85 @@ import com.flazr.rtmp.RtmpHeader;
 import com.flazr.rtmp.RtmpMessage;
 import com.flazr.rtmp.RtmpWriter;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelOutboundHandler;
+import io.netty.handler.stream.ChunkedStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.channels.FileChannel;
 
-public class FlvWriter implements RtmpWriter {
+public class FlvNioWriter implements RtmpWriter {
 
-    private static final Logger logger = LoggerFactory.getLogger(FlvWriter.class);
+    private static final Logger logger = LoggerFactory.getLogger(FlvNioWriter.class);
 
-    private final FileChannel out;
+    private Channel out;
     private final int[] channelTimes = new int[RtmpHeader.MAX_CHANNEL_ID];
     private int primaryChannel = -1;
     private int lastLoggedSeconds;
-    private final int seekTime;
-    private final long startTime;  
+    private int seekTime;
+    private final long startTime;
 
-    public FlvWriter(final String fileName) {
-        this(0, fileName);
+    public void setSeekTime(int seekTime) {
+        this.seekTime = seekTime;
     }
 
-    public FlvWriter(final int seekTime, final String fileName) {
+    public int getSeekTime() {
+        return this.seekTime;
+    }
+
+    public FlvNioWriter() {
+        this(0);
+    }
+
+    public FlvNioWriter(final int seekTime) {
         this.seekTime = seekTime < 0 ? 0 : seekTime;
         this.startTime = System.currentTimeMillis();
-        if(fileName == null) {
-            logger.info("save file notspecified, will only consume stream");
-            out = null;
-            return;
-        }
-        try {
-            File file = new File(fileName);
-            FileOutputStream fos = new FileOutputStream(file);
-            out = fos.getChannel();
-            out.write(FlvAtom.flvHeader().nioBuffer());
-            logger.info("opened file for writing: {}", file.getAbsolutePath());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }        
+//        if(fileName == null) {
+//            logger.info("save file notspecified, will only consume stream");
+//            out = null;
+//            return;
+//        }
+//        try {
+//            File file = new File(fileName);
+//            FileOutputStream fos = new FileOutputStream(file);
+//            out = fos.getChannel();
+//            out.write(FlvAtom.flvHeader().nioBuffer());
+//            out = channel;
+//            out.write(convert2ChunkedStream(FlvAtom.flvHeader()));
+//            logger.info("opened file for writing: {}", file.getAbsolutePath());
+//        } catch (Exception e) {
+//            throw new RuntimeException(e);
+//        }
+    }
+
+    private ChunkedStream convert2ChunkedStream(ByteBuf buf) {
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(ByteBufUtil.getBytes(buf));
+        return new ChunkedStream(inputStream);
     }
 
     @Override
     public void close() {
-        if(out != null) {
+        if (out != null) {
             try {
                 out.close();
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }
-        if(primaryChannel == -1) {
+        if (primaryChannel == -1) {
             logger.warn("no media was written, closed file");
             return;
         }
         logger.info("finished in {} seconds, media duration: {} seconds (seek time: {})",
                 new Object[]{(System.currentTimeMillis() - startTime) / 1000,
-                (channelTimes[primaryChannel] - seekTime) / 1000, 
-                seekTime / 1000});
+                        (channelTimes[primaryChannel] - seekTime) / 1000,
+                        seekTime / 1000});
     }
 
     private void logWriteProgress() {
@@ -94,7 +115,7 @@ public class FlvWriter implements RtmpWriter {
     @Override
     public void write(final RtmpMessage message) {
         final RtmpHeader header = message.getHeader();
-        if(header.isAggregate()) {
+        if (header.isAggregate()) {
             final ByteBuf in = message.encode();
             while (in.isReadable()) {
                 final FlvAtom flvAtom = new FlvAtom(in);
@@ -107,11 +128,13 @@ public class FlvWriter implements RtmpWriter {
         } else { // METADATA / AUDIO / VIDEO
             final int channelId = header.getChannelId();
             channelTimes[channelId] = seekTime + header.getTime();
-            if(primaryChannel == -1 && (header.isAudio() || header.isVideo())) {
+            if (primaryChannel == -1 && (header.isAudio() || header.isVideo())) {
                 logger.info("first media packet for channel: {}", header);
                 primaryChannel = channelId;
+//                setSeekTime(channelTimes[channelId]*-1);
+//                channelTimes[channelId] =0;
             }
-            if(header.getSize() <= 2) {
+            if (header.getSize() <= 2) {
                 return;
             }
             write(new FlvAtom(header.getMessageType(), channelTimes[channelId], message.encode()));
@@ -122,18 +145,21 @@ public class FlvWriter implements RtmpWriter {
     }
 
     private void write(final FlvAtom flvAtom) {
-        if(logger.isDebugEnabled()) {
+        if (logger.isDebugEnabled()) {
             logger.debug("writing: {}", flvAtom);
         }
-        if(out == null) {
+        if (out == null) {
             return;
         }
         try {
-            out.write(flvAtom.write().nioBuffer());
-            out.force(true);
+            out.write(convert2ChunkedStream(flvAtom.write()));
+//            out.flush();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
-    
+
+    public void setOut(Channel out) {
+        this.out = out;
+    }
 }

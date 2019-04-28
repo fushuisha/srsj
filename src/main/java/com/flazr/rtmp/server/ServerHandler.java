@@ -25,16 +25,19 @@ import com.flazr.rtmp.RtmpReader;
 import com.flazr.rtmp.RtmpWriter;
 import com.flazr.rtmp.message.*;
 import com.flazr.util.ChannelUtils;
+import com.srsj.util.RtmpUtil;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
 import io.netty.channel.group.ChannelGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 
 //@ChannelPipelineCoverage("one")
-public class ServerHandler extends SimpleChannelInboundHandler<RtmpMessage> {
+public class ServerHandler extends SimpleChannelInboundHandler<RtmpMessage> implements ChannelOutboundHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(ServerHandler.class);
 
@@ -62,21 +65,58 @@ public class ServerHandler extends SimpleChannelInboundHandler<RtmpMessage> {
         this.aggregateModeEnabled = aggregateModeEnabled;
     }
 
+
+    /**
+     * Calls {@link ChannelHandlerContext#bind(SocketAddress, ChannelPromise)} to forward
+     * to the next {@link ChannelOutboundHandler} in the {@link ChannelPipeline}.
+     *
+     * Sub-classes may override this method to change behavior.
+     */
     @Override
-    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+    public void bind(ChannelHandlerContext ctx, SocketAddress localAddress,
+                     ChannelPromise promise) throws Exception {
+        ctx.bind(localAddress, promise);
+    }
+
+    /**
+     * Calls {@link ChannelHandlerContext#connect(SocketAddress, SocketAddress, ChannelPromise)} to forward
+     * to the next {@link ChannelOutboundHandler} in the {@link ChannelPipeline}.
+     *
+     * Sub-classes may override this method to change behavior.
+     */
+    @Override
+    public void connect(ChannelHandlerContext ctx, SocketAddress remoteAddress,
+                        SocketAddress localAddress, ChannelPromise promise) throws Exception {
         RtmpServer.CHANNELS.add(ctx.channel());
         logger.info("opened channel: {}", ctx.channel());
+        ctx.connect(remoteAddress, localAddress, promise);
     }
 
-
+    /**
+     * Calls {@link ChannelHandlerContext#disconnect(ChannelPromise)} to forward
+     * to the next {@link ChannelOutboundHandler} in the {@link ChannelPipeline}.
+     *
+     * Sub-classes may override this method to change behavior.
+     */
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
+    public void disconnect(ChannelHandlerContext ctx, ChannelPromise promise)
             throws Exception {
-        ChannelUtils.exceptionCaught(cause);
+        ctx.disconnect(promise);
     }
 
+    /**
+     * Calls {@link ChannelHandlerContext#close(ChannelPromise)} to forward
+     * to the next {@link ChannelOutboundHandler} in the {@link ChannelPipeline}.
+     *
+     * Sub-classes may override this method to change behavior.
+     */
     @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+    public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
+        doClose(ctx);
+        ctx.close(promise);
+    }
+
+    private void doClose(ChannelHandlerContext ctx) {
         logger.info("channel closed: {}", ctx.channel());
         if (publisher != null) {
             publisher.close();
@@ -87,11 +127,59 @@ public class ServerHandler extends SimpleChannelInboundHandler<RtmpMessage> {
         unpublishIfLive();
     }
 
-//    @Override
-//    public void writeComplete(final ChannelHandlerContext ctx, final WriteCompletionEvent e) throws Exception {
-//        bytesWritten += e.getWrittenAmount();
-//        super.writeComplete(ctx, e);
-//    }
+    /**
+     * Calls {@link ChannelHandlerContext#deregister(ChannelPromise)} to forward
+     * to the next {@link ChannelOutboundHandler} in the {@link ChannelPipeline}.
+     *
+     * Sub-classes may override this method to change behavior.
+     */
+    @Override
+    public void deregister(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
+        ctx.deregister(promise);
+    }
+
+    /**
+     * Calls {@link ChannelHandlerContext#read()} to forward
+     * to the next {@link ChannelOutboundHandler} in the {@link ChannelPipeline}.
+     *
+     * Sub-classes may override this method to change behavior.
+     */
+    @Override
+    public void read(ChannelHandlerContext ctx) throws Exception {
+        ctx.read();
+    }
+
+    /**
+     * Calls {@link ChannelHandlerContext#write(Object, ChannelPromise)} to forward
+     * to the next {@link ChannelOutboundHandler} in the {@link ChannelPipeline}.
+     *
+     * Sub-classes may override this method to change behavior.
+     */
+    @Override
+    public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+        ctx.write(msg, promise);
+        if (msg!=null && msg instanceof ByteBuf) {
+            bytesWritten += ((ByteBuf) msg).writableBytes();
+        }
+    }
+
+    /**
+     * Calls {@link ChannelHandlerContext#flush()} to forward
+     * to the next {@link ChannelOutboundHandler} in the {@link ChannelPipeline}.
+     *
+     * Sub-classes may override this method to change behavior.
+     */
+    @Override
+    public void flush(ChannelHandlerContext ctx) throws Exception {
+        ctx.flush();
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
+            throws Exception {
+        ChannelUtils.exceptionCaught(cause);
+        super.exceptionCaught(ctx, cause);
+    }
 
 
     @Override
@@ -140,6 +228,7 @@ public class ServerHandler extends SimpleChannelInboundHandler<RtmpMessage> {
                     int deleteStreamId = ((Double) command.getArg(0)).intValue();
                     logger.info("deleting stream id: {}", deleteStreamId);
                     // TODO ?
+                    deleteStream(ctx);
                 } else if (name.equals("closeStream")) {
                     final int clientStreamId = command.getHeader().getStreamId();
                     logger.info("closing stream id: {}", clientStreamId); // TODO
@@ -159,11 +248,13 @@ public class ServerHandler extends SimpleChannelInboundHandler<RtmpMessage> {
             case METADATA_AMF0:
             case METADATA_AMF3:
                 final Metadata meta = (Metadata) message;
-                if (meta.getName().equals("onMetaData")) {
+                if (meta.getName().equals("onMetaData") || meta.getName().equals("@setDataFrame")) {
                     logger.info("adding onMetaData message: {}", meta);
+                    meta.setName("onMetaData");
                     meta.setDuration(-1);
                     subscriberStream.addConfigMessage(meta);
                 }
+//                subscriberStream.setMeta(meta);
                 broadcast(message);
                 break;
             case AUDIO:
@@ -198,6 +289,13 @@ public class ServerHandler extends SimpleChannelInboundHandler<RtmpMessage> {
         fireNext(ctx);
     }
 
+    private void deleteStream(ChannelHandlerContext ctx) {
+        doClose(ctx);
+        subscriberStream.getSubscribers().close();
+        application.removeStream(subscriberStream.getName());
+//        recorder.close();
+    }
+
     private void fireNext(final ChannelHandlerContext ctx) {
         if (publisher != null && publisher.isStarted() && !publisher.isPaused()) {
             publisher.fireNext(ctx, 0);
@@ -223,6 +321,8 @@ public class ServerHandler extends SimpleChannelInboundHandler<RtmpMessage> {
 
     private void broadcast(final RtmpMessage message) {
         subscriberStream.getSubscribers().write(message);
+//        ServerStream serverStream = application.getStream(subscriberStream.getName());
+//        serverStream.getSubscribers().write(message);
         if (recorder != null) {
             recorder.write(message);
         }
@@ -250,6 +350,53 @@ public class ServerHandler extends SimpleChannelInboundHandler<RtmpMessage> {
         channel.write(result);
         channel.write(Command.onBWDone());
     }
+
+    private void playResponse(final ChannelHandlerContext ctx, final String streamName) {
+        final Command playResetCommand = null;
+        final ServerStream stream = application.getStream(streamName);
+//        logger.debug("play name {}, start {}, length {}, reset {}",
+//                new Object[]{clientPlayName, playStart, playLength, playReset});
+        Channel channel = ctx.channel();
+        if (stream.isLive()) {
+            for (final RtmpMessage message : getStartMessages(playResetCommand)) {
+                writeToStream(channel, message);
+            }
+            boolean videoConfigPresent = false;
+            for (RtmpMessage message : stream.getConfigMessages()) {
+                logger.info("writing start meta / config: {}", message);
+                if (message.getHeader().isVideo()) {
+                    videoConfigPresent = true;
+                }
+                writeToStream(channel, message);
+            }
+            if (!videoConfigPresent) {
+                writeToStream(channel, Video.empty());
+            }
+            stream.getSubscribers().add(channel);
+            logger.info("client requested live stream: {}, added to stream: {}", streamName, stream);
+            return;
+        }
+//        if (!clientPlayName.equals(playName)) {
+//            playName = clientPlayName;
+//            final RtmpReader reader = application.getReader(playName);
+//            if (reader == null) {
+//                channel.write(Command.playFailed(playName, clientId));
+//                return;
+//            }
+//            publisher = new RtmpPublisher(reader, streamId, bufferDuration, true, aggregateModeEnabled) {
+//                @Override
+//                protected RtmpMessage[] getStopMessages(long timePosition) {
+//                    return new RtmpMessage[]{
+//                            Metadata.onPlayStatus(timePosition / (double) 1000, bytesWritten),
+//                            Command.playStop(playName, clientId),
+//                            Control.streamEof(streamId)
+//                    };
+//                }
+//            };
+//        }
+//        publisher.start(ctx, playStart, playLength, getStartMessages(playResetCommand));
+    }
+
 
     private void playResponse(final ChannelHandlerContext ctx, final Command play) {
         int playStart = -2;

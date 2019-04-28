@@ -44,25 +44,29 @@ public abstract class Metadata extends AbstractMessage {
     }
 
     public Object getData(int index) {
-        if(data == null || data.length < index + 1) {
+        if (data == null || data.length < index + 1) {
             return null;
         }
         return data[index];
     }
 
+    public void setName(String name) {
+        this.name = name;
+    }
+
     private Object getValue(String key) {
         final Map<String, Object> map = getMap(0);
-        if(map == null) {
+        if (map == null) {
             return null;
         }
         return map.get(key);
     }
 
     public void setValue(String key, Object value) {
-        if(data == null || data.length == 0) {
+        if (data == null || data.length == 0) {
             data = new Object[]{new LinkedHashMap<String, Object>()};
         }
-        if(data[0] == null) {
+        if (data[0] == null) {
             data[0] = new LinkedHashMap<String, Object>();
         }
         final Map<String, Object> map = (Map) data[0];
@@ -86,31 +90,40 @@ public abstract class Metadata extends AbstractMessage {
     }
 
     public double getDuration() {
-        if(data == null || data.length == 0) {
+        if (data == null || data.length == 0) {
             return -1;
         }
         final Map<String, Object> map = getMap(0);
-        if(map == null) {
+        if (map == null) {
             return -1;
         }
         final Object o = map.get("duration");
-        if(o == null) {
+        if (o == null) {
             return -1;
         }
         return ((Double) o).longValue();
     }
 
     public void setDuration(final double duration) {
-        if(data == null || data.length == 0) {
-            data = new Object[] {map(pair("duration", duration))};
+        if (data == null || data.length == 0) {
+            data = new Object[]{map(pair("duration", duration))};
+        }
+        for (Object meta : data) {
+            if (meta instanceof Map) {
+                data[0] = meta;
+                data[1] = null;
+                break;
+            }
         }
         final Object meta = data[0];
         final Map<String, Object> map = (Map) meta;
-        if(map == null) {
+        if (map == null) {
             data[0] = map(pair("duration", duration));
             return;
         }
-        map.put("duration", duration);
+        map.put("audiocodecid", 10);
+        map.put("videocodecid", 7);
+//        map.put("duration", duration);
     }
 
     //==========================================================================
@@ -134,85 +147,85 @@ public abstract class Metadata extends AbstractMessage {
     //==========================================================================
 
     /**
-    [ (map){
-        duration=112.384, moovPosition=28.0, width=640.0, height=352.0, videocodecid=avc1,
-        audiocodecid=mp4a, avcprofile=100.0, avclevel=30.0, aacaot=2.0, videoframerate=29.97002997002997,
-        audiosamplerate=24000.0, audiochannels=2.0, trackinfo= [
-            (object){length=3369366.0, timescale=30000.0, language=eng, sampledescription=[(object){sampletype=avc1}]},
-            (object){length=2697216.0, timescale=24000.0, language=eng, sampledescription=[(object){sampletype=mp4a}]}
-        ]}]
-    */
+     * [ (map){
+     * duration=112.384, moovPosition=28.0, width=640.0, height=352.0, videocodecid=avc1,
+     * audiocodecid=mp4a, avcprofile=100.0, avclevel=30.0, aacaot=2.0, videoframerate=29.97002997002997,
+     * audiosamplerate=24000.0, audiochannels=2.0, trackinfo= [
+     * (object){length=3369366.0, timescale=30000.0, language=eng, sampledescription=[(object){sampletype=avc1}]},
+     * (object){length=2697216.0, timescale=24000.0, language=eng, sampledescription=[(object){sampletype=mp4a}]}
+     * ]}]
+     */
 
     public static Metadata onMetaDataTest(MovieInfo movie) {
         Amf0Object track1 = object(
-            pair("length", 3369366.0),
-            pair("timescale", 30000.0),
-            pair("language", "eng"),
-            pair("sampledescription", new Amf0Object[]{object(pair("sampletype", "avc1"))})
+                pair("length", 3369366.0),
+                pair("timescale", 30000.0),
+                pair("language", "eng"),
+                pair("sampledescription", new Amf0Object[]{object(pair("sampletype", "avc1"))})
         );
         Amf0Object track2 = object(
-            pair("length", 2697216.0),
-            pair("timescale", 24000.0),
-            pair("language", "eng"),
-            pair("sampledescription", new Amf0Object[]{object(pair("sampletype", "mp4a"))})
+                pair("length", 2697216.0),
+                pair("timescale", 24000.0),
+                pair("language", "eng"),
+                pair("sampledescription", new Amf0Object[]{object(pair("sampletype", "mp4a"))})
         );
         Map<String, Object> map = map(
-            pair("duration", movie.getDuration()),
-            pair("moovPosition", movie.getMoovPosition()),
-            pair("width", 640.0),
-            pair("height", 352.0),
-            pair("videocodecid", "avc1"),
-            pair("audiocodecid", "mp4a"),
-            pair("avcprofile", 100.0),
-            pair("avclevel", 30.0),
-            pair("aacaot", 2.0),
-            pair("videoframerate", 29.97002997002997),
-            pair("audiosamplerate", 24000.0),
-            pair("audiochannels", 2.0),
-            pair("trackinfo", new Amf0Object[]{track1, track2})
+                pair("duration", movie.getDuration()),
+                pair("moovPosition", movie.getMoovPosition()),
+                pair("width", 640.0),
+                pair("height", 352.0),
+                pair("videocodecid", "avc1"),
+                pair("audiocodecid", "mp4a"),
+                pair("avcprofile", 100.0),
+                pair("avclevel", 30.0),
+                pair("aacaot", 2.0),
+                pair("videoframerate", 29.97002997002997),
+                pair("audiosamplerate", 24000.0),
+                pair("audiochannels", 2.0),
+                pair("trackinfo", new Amf0Object[]{track1, track2})
         );
         return new MetadataAmf0("onMetaData", map);
     }
 
     public static Metadata onMetaData(MovieInfo movie) {
         Map<String, Object> map = map(
-            pair("duration", movie.getDuration()),
-            pair("moovPosition", movie.getMoovPosition())
+                pair("duration", movie.getDuration()),
+                pair("moovPosition", movie.getMoovPosition())
         );
         TrackInfo track1 = movie.getVideoTrack();
         Amf0Object t1 = null;
-        if(track1 != null) {
+        if (track1 != null) {
             String sampleType = track1.getStsd().getSampleTypeString(1);
             t1 = object(
-                pair("length", track1.getMdhd().getDuration()),
-                pair("timescale", track1.getMdhd().getTimeScale()),
-                pair("sampledescription", new Amf0Object[]{object(pair("sampletype", sampleType))})
+                    pair("length", track1.getMdhd().getDuration()),
+                    pair("timescale", track1.getMdhd().getTimeScale()),
+                    pair("sampledescription", new Amf0Object[]{object(pair("sampletype", sampleType))})
             );
             VideoSD video = movie.getVideoSampleDescription();
             map(map,
-                pair("width", (double) video.getWidth()),
-                pair("height", (double) video.getHeight()),
-                pair("videocodecid", sampleType)
+                    pair("width", (double) video.getWidth()),
+                    pair("height", (double) video.getHeight()),
+                    pair("videocodecid", sampleType)
             );
         }
         TrackInfo track2 = movie.getAudioTrack();
         Amf0Object t2 = null;
-        if(track2 != null) {
+        if (track2 != null) {
             String sampleType = track2.getStsd().getSampleTypeString(1);
             t2 = object(
-                pair("length", track2.getMdhd().getDuration()),
-                pair("timescale", track2.getMdhd().getTimeScale()),
-                pair("sampledescription", new Amf0Object[]{object(pair("sampletype", sampleType))})
+                    pair("length", track2.getMdhd().getDuration()),
+                    pair("timescale", track2.getMdhd().getTimeScale()),
+                    pair("sampledescription", new Amf0Object[]{object(pair("sampletype", sampleType))})
             );
             map(map,
-                pair("audiocodecid", sampleType)
+                    pair("audiocodecid", sampleType)
             );
         }
         List<Amf0Object> trackList = new ArrayList<Amf0Object>();
-        if(t1 != null) {
+        if (t1 != null) {
             trackList.add(t1);
         }
-        if(t2 != null) {
+        if (t2 != null) {
             trackList.add(t2);
         }
         map(map, pair("trackinfo", trackList.toArray()));

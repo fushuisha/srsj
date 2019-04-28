@@ -20,12 +20,14 @@
 package com.flazr.rtmp.server;
 
 import com.flazr.io.f4v.F4vReader;
+import com.flazr.io.flv.FlvNioWriter;
 import com.flazr.io.flv.FlvReader;
 import com.flazr.io.flv.FlvWriter;
 import com.flazr.rtmp.RtmpConfig;
 import com.flazr.rtmp.RtmpReader;
 import com.flazr.rtmp.RtmpWriter;
 import com.flazr.util.Utils;
+import io.netty.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,6 +90,19 @@ public class ServerApplication {
 
     public ServerStream getStream(final String rawName) {        
         return getStream(rawName, null);
+    }
+
+    public ServerStream subscriberGetStream(final String rawName) {
+        final String streamName = cleanName(rawName);
+        ServerStream stream = streams.get(streamName);
+        return stream;
+    }
+
+    public void removeStream(final String rawName) {
+        final String streamName = cleanName(rawName);
+//        ServerStream stream = streams.get(streamName);
+//        return stream;
+        streams.remove(streamName);
     }
 
     public ServerStream getStream(final String rawName, final String type) {

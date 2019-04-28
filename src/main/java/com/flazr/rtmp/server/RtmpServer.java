@@ -37,25 +37,34 @@ import io.netty.util.Timer;
 import io.netty.util.concurrent.DefaultEventExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.stereotype.Component;
 
+import javax.naming.InitialContext;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-public class RtmpServer {
+@Component
+public class RtmpServer implements InitializingBean {
 
     private static final Logger logger = LoggerFactory.getLogger(RtmpServer.class);
 
     static {
         RtmpConfig.configureServer();
-        CHANNELS = new DefaultChannelGroup("server-channels",new DefaultEventExecutor());
+        CHANNELS = new DefaultChannelGroup("server-channels", new DefaultEventExecutor());
         APPLICATIONS = new ConcurrentHashMap<>();
         TIMER = new HashedWheelTimer(RtmpConfig.TIMER_TICK_SIZE, TimeUnit.MILLISECONDS);
     }
 
-    protected static final ChannelGroup CHANNELS;
-    protected static final Map<String, ServerApplication> APPLICATIONS;
+    public static final ChannelGroup CHANNELS;
+    public static final Map<String, ServerApplication> APPLICATIONS;
     public static final Timer TIMER;
+
+    @Autowired
+    private ThreadPoolTaskExecutor taskExecutor;
 
     public void run(int port) throws Exception {
 
@@ -73,7 +82,7 @@ public class RtmpServer {
                     .option(ChannelOption.ALLOCATOR, PreferredDirectByteBufAllocator.DEFAULT)
                     .childOption(ChannelOption.TCP_NODELAY, true)
                     .childOption(ChannelOption.SO_KEEPALIVE, true)
-                    .childOption(ChannelOption.RCVBUF_ALLOCATOR, new AdaptiveRecvByteBufAllocator(1024,2048,5096))
+                    .childOption(ChannelOption.RCVBUF_ALLOCATOR, new AdaptiveRecvByteBufAllocator(1024, 2048, 5096))
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         /*
                          * (non-Javadoc)
@@ -97,22 +106,13 @@ public class RtmpServer {
             f.channel().closeFuture().sync();
 
 
-            final Thread monitor = new StopMonitor(RtmpConfig.SERVER_STOP_PORT);
-            monitor.start();
-            monitor.join();
-
-            TIMER.stop();
-            final ChannelGroupFuture future = CHANNELS.close();
-            logger.info("closing channels");
-            future.awaitUninterruptibly();
-//            logger.info("releasing resources");
-//            factory.releaseExternalResources();
-//            logger.info("server stopped");
         } finally {
             // 优雅停机
             bossGroup.shutdownGracefully();
             workerGroup.shutdownGracefully();
         }
+
+
     }
 
     public static void main(String[] args) throws Exception {
@@ -125,5 +125,66 @@ public class RtmpServer {
             }
         }
         new RtmpServer().run(port);
+    }
+
+    private class ServerThread implements Runnable {
+        @Override
+        public void run() {
+            int port = 1935;
+            EventLoopGroup bossGroup = new NioEventLoopGroup();
+            EventLoopGroup workerGroup = new NioEventLoopGroup();
+            try {
+                ServerBootstrap b = new ServerBootstrap();
+                b.group(bossGroup, workerGroup)
+                        .channel(NioServerSocketChannel.class)
+                        .option(ChannelOption.SO_BACKLOG, 100)
+                        .option(ChannelOption.ALLOCATOR, PreferredDirectByteBufAllocator.DEFAULT)
+                        .childOption(ChannelOption.TCP_NODELAY, true)
+                        .childOption(ChannelOption.SO_KEEPALIVE, true)
+                        .childOption(ChannelOption.RCVBUF_ALLOCATOR, new AdaptiveRecvByteBufAllocator(1024, 2048, 5096))
+                        .childHandler(new ChannelInitializer<SocketChannel>() {
+                            /*
+                             * (non-Javadoc)
+                             *
+                             * @see
+                             * io.netty.channel.ChannelInitializer#initChannel(io
+                             * .netty.channel.Channel)
+                             */
+                            public void initChannel(SocketChannel ch)
+                                    throws Exception {
+                                ch.pipeline().addLast("handshaker", new ServerHandshakeHandler());
+                                ch.pipeline().addLast("decoder", new RtmpDecoder());
+                                ch.pipeline().addLast("encoder", new RtmpEncoder());
+                                ch.pipeline().addLast("handler", new ServerHandler());
+                            }
+                        });
+                ChannelFuture f = b.bind(port).sync();
+                System.out.println("Start file server at port : " + port);
+
+                final Thread monitor = new StopMonitor(RtmpConfig.SERVER_STOP_PORT);
+                monitor.start();
+
+                f.channel().closeFuture().sync();
+
+                TIMER.stop();
+                final ChannelGroupFuture future = CHANNELS.close();
+                logger.info("closing channels");
+                future.awaitUninterruptibly();
+//            logger.info("releasing resources");
+//            factory.releaseExternalResources();
+//            logger.info("server stopped");
+            } catch (Exception ex) {
+                logger.warn(ex.toString(), ex);
+            } finally {
+                // 优雅停机
+                bossGroup.shutdownGracefully();
+                workerGroup.shutdownGracefully();
+            }
+        }
+    }
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        taskExecutor.execute(new ServerThread());
     }
 }

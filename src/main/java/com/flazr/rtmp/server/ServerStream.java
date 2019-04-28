@@ -19,6 +19,7 @@
 package com.flazr.rtmp.server;
 
 import com.flazr.rtmp.RtmpMessage;
+import com.flazr.rtmp.message.Metadata;
 import com.flazr.util.Utils;
 import io.netty.channel.Channel;
 import io.netty.channel.group.ChannelGroup;
@@ -31,6 +32,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ServerStream {
+
+//    public Metadata getMeta() {
+//        return meta;
+//    }
+
+//    public void setMeta(Metadata meta) {
+//        this.meta = meta;
+//    }
 
     public static enum PublishType {
 
@@ -53,6 +62,7 @@ public class ServerStream {
     private final ChannelGroup subscribers;
     private final List<RtmpMessage> configMessages;
     private Channel publisher;
+//    private Metadata meta;
 
     private static final Logger logger = LoggerFactory.getLogger(ServerStream.class);
 
