@@ -1,18 +1,3 @@
-/*
- * Copyright 2013-2018 Lilinfeng.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.srsj.server;
 
 import io.netty.bootstrap.ServerBootstrap;
@@ -30,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
@@ -40,6 +26,8 @@ public class HttpFileServer implements InitializingBean {
 
     private static final String DEFAULT_URL = "/sanshidi";
 
+    @Value("${http.port}")
+    private int HTTP_PORT;
     @Autowired
     private ThreadPoolTaskExecutor taskExecutor;
 
@@ -64,7 +52,7 @@ public class HttpFileServer implements InitializingBean {
                                     new ChunkedWriteHandler());
                             ch.pipeline().addLast("fileServerHandler",
                                     new HttpFileServerHandler(url));
-                            ch.pipeline().addLast("flvHandler",new FlvHandler());
+                            ch.pipeline().addLast("flvHandler", new FlvHandler());
                         }
                     });
             ChannelFuture future = b.bind(port).sync();
@@ -95,7 +83,8 @@ public class HttpFileServer implements InitializingBean {
 
         @Override
         public void run() {
-            int port = 8080;
+//            int port = 8080;
+            int port = HTTP_PORT;
             EventLoopGroup bossGroup = new NioEventLoopGroup();
             EventLoopGroup workerGroup = new NioEventLoopGroup();
             try {
@@ -116,11 +105,11 @@ public class HttpFileServer implements InitializingBean {
                                         new ChunkedWriteHandler());
                                 ch.pipeline().addLast("fileServerHandler",
                                         new HttpFileServerHandler(DEFAULT_URL));
-                                ch.pipeline().addLast("flvHandler",new FlvHandler());
+                                ch.pipeline().addLast("flvHandler", new FlvHandler());
                             }
                         });
                 ChannelFuture future = b.bind(port).sync();
-                System.out.println("HTTP文件目录服务器启动，网址是 : " + "http://127.0.0.1:8080/myapp/dev.flv");
+                System.err.println("HTTP-FLV服务器启动，网址是 : " + "http://127.0.0.1:"+port+"/myapp/dev.flv");
                 future.channel().closeFuture().sync();
             } catch (Exception ex) {
                 logger.warn(ex.toString(), ex);

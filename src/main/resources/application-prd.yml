@@ -1,19 +1,22 @@
+server:
+  port: ${SERVER_PORT:8080}
 spring:
   application:
-    name: eureka-ha
+    name: service-srsj-console
 
-server:
-  port: 8761
+  #eureka:
+  #  instance:
+  #    hostname: ${HOST_LOCAL:localhost}
+  #    prefer-ip-address: true
+#  client:
+#    registerWithEureka: true
+#    fetchRegistry: true
+#    serviceUrl:
+#      defaultZone: http://${HOST_NAME:ubuntu1}:${server.port}/eureka/
 
-eureka:
-  instance:
-    hostname: ${HOST_LOCAL}
-#    prefer-ip-address: true
-  client:
-    registerWithEureka: true
-    fetchRegistry: true
-    serviceUrl:
-      defaultZone: http://${HOST_NAME}:${server.port}/eureka/
-
-#logbackConfigLocation: classpath:logback-prd.xml
+#logbackConfigLocation: classpath:logback.xml
 logging.config: classpath:logback-prd.xml
+
+rtmp.port: ${RTMP_PORT:1935}
+http.port: ${HTTP_PORT:8762}
+

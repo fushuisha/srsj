@@ -1,18 +1,3 @@
-/*
- * Copyright 2013-2018 Lilinfeng.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.srsj.server;
 
 import com.flazr.io.flv.FlvAtom;
@@ -25,7 +10,9 @@ import com.srsj.util.RtmpUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.*;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.stream.ChunkedStream;
 import io.netty.util.CharsetUtil;
@@ -34,7 +21,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.activation.MimetypesFileTypeMap;
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.regex.Pattern;
 
@@ -44,11 +33,6 @@ import static io.netty.handler.codec.http.HttpMethod.GET;
 import static io.netty.handler.codec.http.HttpResponseStatus.*;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
-/**
- * @author lilinfeng
- * @version 1.0
- * @date 2014年2月14日
- */
 public class HttpFileServerHandler extends
         SimpleChannelInboundHandler<FullHttpRequest> {
     private Logger logger = LoggerFactory.getLogger(HttpFileServerHandler.class);
@@ -190,6 +174,7 @@ public class HttpFileServerHandler extends
             throws Exception {
 //        cause.printStackTrace();
         RtmpUtil.log(logger, ConstUtil.LogLevelEnum.Warn, "cause", cause.toString(), cause);
+        ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
         if (ctx.channel().isActive()) {
             sendError(ctx, INTERNAL_SERVER_ERROR);
         }
@@ -197,6 +182,7 @@ public class HttpFileServerHandler extends
 
     private static final Pattern INSECURE_URI = Pattern.compile(".*[<>&\"].*");
 
+    @Deprecated
     private String sanitizeUri(String uri) {
         try {
             uri = URLDecoder.decode(uri, "UTF-8");
@@ -222,9 +208,11 @@ public class HttpFileServerHandler extends
         return System.getProperty("user.dir") + File.separator + uri;
     }
 
+    @Deprecated
     private static final Pattern ALLOWED_FILE_NAME = Pattern
             .compile("[A-Za-z0-9][-_A-Za-z0-9\\.]*");
 
+    @Deprecated
     private static void sendListing(ChannelHandlerContext ctx, File dir) {
         FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, OK);
         response.headers().set(CONTENT_TYPE, "text/html; charset=UTF-8");

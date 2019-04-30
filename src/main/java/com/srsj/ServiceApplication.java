@@ -25,6 +25,7 @@ public class ServiceApplication {
 
     @RequestMapping(value = "/console", produces = {"application/json"})
     public String home(@RequestParam(required = false) String name) {
+        // TODO
         return "hi " + name + ",i am from port:" + port;
     }
 

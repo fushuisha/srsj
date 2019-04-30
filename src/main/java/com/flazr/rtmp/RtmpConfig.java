@@ -64,9 +64,9 @@ public class RtmpConfig {
     }
 
     private static void configure(Type type) {
-        Utils.printlnCopyrightNotice();
+//        Utils.printlnCopyrightNotice();
         String flazrHome = null;
-        final InputStream is = RtmpConfig.class.getResourceAsStream("/flazr-init.properties");
+        final InputStream is = RtmpConfig.class.getClassLoader().getResourceAsStream("./flazr-init.properties");
         if(is != null) {
             logger.info("flazr-init.properties found on classpath");
             final Properties flazrProps = loadProps(is);
@@ -77,17 +77,17 @@ public class RtmpConfig {
         } else {
             logger.warn("flazr-init.properties not found on classpath, will try system property 'flazr.home'");
         }
-        if(flazrHome == null) {
-            flazrHome = System.getProperty("flazr.home");
-        }
-        if(flazrHome == null) {        
-            File currentDir = new File("");
-            logger.warn("'flazr.home' system property not set, will use current directory: {}", currentDir.getAbsolutePath());
-            flazrHome = "";
-        } else if(!flazrHome.endsWith("/")) {
-            flazrHome = flazrHome + "/";
-            logger.info("using 'flazr.home' = {}", flazrHome);
-        }
+//        if(flazrHome == null) {
+//            flazrHome = System.getProperty("flazr.home");
+//        }
+//        if(flazrHome == null) {
+//            File currentDir = new File("");
+//            logger.warn("'flazr.home' system property not set, will use current directory: {}", currentDir.getAbsolutePath());
+//            flazrHome = "";
+//        } else if(!flazrHome.endsWith("/")) {
+//            flazrHome = flazrHome + "/";
+//            logger.info("using 'flazr.home' = {}", flazrHome);
+//        }
 
         try {
             File propsFile = new File(RtmpConfig.class.getClassLoader().getResource(flazrHome + "flazr.properties").toURI());
@@ -113,7 +113,7 @@ public class RtmpConfig {
                             throw new RuntimeException("home dir does not exist: " + homeFile.getAbsolutePath());
                         }
                         logger.info("home dir: '{}'", homeFile.getAbsolutePath());
-                        logger.info("server port: {} (stop {})", SERVER_PORT, SERVER_STOP_PORT);
+//                        logger.info("server port: {} (stop {})", SERVER_PORT, SERVER_STOP_PORT);
                         break;
                     case PROXY:
                     case PROXY_STOP:

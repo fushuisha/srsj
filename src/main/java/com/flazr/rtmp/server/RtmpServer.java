@@ -39,6 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
@@ -51,6 +52,9 @@ import java.util.concurrent.TimeUnit;
 public class RtmpServer implements InitializingBean {
 
     private static final Logger logger = LoggerFactory.getLogger(RtmpServer.class);
+
+    @Value("${rtmp.port}")
+    private int RTMP_PORT;
 
     static {
         RtmpConfig.configureServer();
@@ -130,7 +134,8 @@ public class RtmpServer implements InitializingBean {
     private class ServerThread implements Runnable {
         @Override
         public void run() {
-            int port = 1935;
+//            int port = 1935;
+            int port = RTMP_PORT;
             EventLoopGroup bossGroup = new NioEventLoopGroup();
             EventLoopGroup workerGroup = new NioEventLoopGroup();
             try {
@@ -159,7 +164,8 @@ public class RtmpServer implements InitializingBean {
                             }
                         });
                 ChannelFuture f = b.bind(port).sync();
-                System.out.println("Start file server at port : " + port);
+                System.err.println("RTMP服务器启动，网址是 : " + "http://127.0.0.1:"+port+"/myapp/stream");
+
 
                 final Thread monitor = new StopMonitor(RtmpConfig.SERVER_STOP_PORT);
                 monitor.start();
