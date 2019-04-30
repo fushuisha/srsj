@@ -16,7 +16,6 @@
 package com.srsj.server;
 
 import com.flazr.io.flv.FlvAtom;
-import com.flazr.io.flv.FlvNioWriter;
 import com.flazr.rtmp.RtmpMessage;
 import com.flazr.rtmp.server.RtmpServer;
 import com.flazr.rtmp.server.ServerApplication;
@@ -28,11 +27,8 @@ import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.handler.codec.http.*;
-import io.netty.handler.stream.ChunkedFile;
-import io.netty.handler.stream.ChunkedNioStream;
 import io.netty.handler.stream.ChunkedStream;
 import io.netty.util.CharsetUtil;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,12 +36,10 @@ import org.slf4j.LoggerFactory;
 import javax.activation.MimetypesFileTypeMap;
 import java.io.*;
 import java.net.URLDecoder;
-import java.util.List;
 import java.util.regex.Pattern;
 
 import static io.netty.handler.codec.http.HttpHeaders.Names.*;
 import static io.netty.handler.codec.http.HttpHeaders.isKeepAlive;
-import static io.netty.handler.codec.http.HttpHeaders.setContentLength;
 import static io.netty.handler.codec.http.HttpMethod.GET;
 import static io.netty.handler.codec.http.HttpResponseStatus.*;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
@@ -150,21 +144,22 @@ public class HttpFileServerHandler extends
                 response.headers().set("Expires", -1);
                 response.headers().set("Server", "netty");
                 response.headers().set("Transfer-Encoding", "chunked");
-//        response.headers().set("Access-Control-Allow-Methods","GET, POST, OPTIONS");
-//        response.headers().set("Access-Control-Allow-Headers","DNT,X-Mx-ReqToken,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Authorization");
+                response.headers().set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+                response.headers().set("Access-Control-Allow-Headers", "DNT,X-Mx-ReqToken,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Authorization,range");
                 // write response header
                 ctx.writeAndFlush(response);
 
                 // write chunked stream:flv header
                 ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(ByteBufUtil.getBytes(FlvAtom.flvHeader()));
-                ctx.write(new ChunkedStream(byteArrayInputStream), ctx.newProgressivePromise());
+                ctx.write(new ChunkedStream(byteArrayInputStream));
+                byteArrayInputStream.close();
 
 //        RandomAccessFile randomAccessFile = new RandomAccessFile("d:\\dev\\git\\sanshidi\\respo\\dev.flv", "r");
 //        ctx.writeAndFlush(new ChunkedNioStream(randomAccessFile.getChannel()), ctx.newProgressivePromise());
 //        ctx.writeAndFlush(new ChunkedStream(new FileInputStream(file)), ctx.newProgressivePromise());
 
                 // write chunked stream:flv metadata
-//                ctx.channel().write(serverStream.getMeta());
+                ctx.channel().write(serverStream.getMeta());
 
                 // write chunked stream:flv key frames
                 for (RtmpMessage rtmpMessage : serverStream.getConfigMessages()) {

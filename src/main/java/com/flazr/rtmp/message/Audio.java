@@ -35,7 +35,7 @@ public class Audio extends DataMessage {
      */
     @Override
     public boolean isConfig() { // TODO now hard coded for mp4a
-        return data.readableBytes() > 3 && (data.getInt(0) == 0xaf001310);
+        return data.readableBytes() > 3 && (data.getInt(0) == 0xaf001310 || data.getInt(0) == 0xaf001210);
 //        return true;
     }
 

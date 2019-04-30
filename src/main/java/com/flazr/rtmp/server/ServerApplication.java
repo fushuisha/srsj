@@ -20,17 +20,16 @@
 package com.flazr.rtmp.server;
 
 import com.flazr.io.f4v.F4vReader;
-import com.flazr.io.flv.FlvNioWriter;
 import com.flazr.io.flv.FlvReader;
 import com.flazr.io.flv.FlvWriter;
 import com.flazr.rtmp.RtmpConfig;
 import com.flazr.rtmp.RtmpReader;
 import com.flazr.rtmp.RtmpWriter;
 import com.flazr.util.Utils;
-import io.netty.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -74,7 +73,12 @@ public class ServerApplication {
 
     public RtmpWriter getWriter(final String rawName, ServerStream.PublishType publishType) {
         final String streamName = Utils.trimSlashes(rawName);
-        final String path = RtmpConfig.SERVER_HOME_DIR + "/apps/" + name + "/";
+//        final String path = RtmpConfig.SERVER_HOME_DIR + "/apps/" + name + "/";
+        final String path = this.getClass().getClassLoader().getResource("./static/records").getPath() + "/apps/" + name + "/";
+        File fold = new File(path);
+        if (!fold.isDirectory()) {
+            fold.mkdirs();
+        }
         return new FlvWriter(path + streamName + ".flv");
     }
 

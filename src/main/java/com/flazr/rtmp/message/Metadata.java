@@ -24,6 +24,7 @@ import com.flazr.io.f4v.MovieInfo;
 import com.flazr.io.f4v.TrackInfo;
 import com.flazr.io.f4v.box.STSD.VideoSD;
 import com.flazr.rtmp.RtmpHeader;
+import com.srsj.util.RtmpUtil;
 import io.netty.buffer.ByteBuf;
 
 import java.util.*;
@@ -121,8 +122,13 @@ public abstract class Metadata extends AbstractMessage {
             data[0] = map(pair("duration", duration));
             return;
         }
-        map.put("audiocodecid", 10);
-        map.put("videocodecid", 7);
+        if (RtmpUtil.obj2str(map.get("audiocodecid")).equals("mp4a")) {
+            map.put("audiocodecid", 10);
+        }
+        if (RtmpUtil.obj2str(map.get("videocodecid")).equals("avc1")) {
+            map.put("videocodecid", 7);
+        }
+
 //        map.put("duration", duration);
     }
 

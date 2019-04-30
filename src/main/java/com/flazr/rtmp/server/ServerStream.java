@@ -33,13 +33,13 @@ import java.util.List;
 
 public class ServerStream {
 
-//    public Metadata getMeta() {
-//        return meta;
-//    }
+    public Metadata getMeta() {
+        return meta;
+    }
 
-//    public void setMeta(Metadata meta) {
-//        this.meta = meta;
-//    }
+    public void setMeta(Metadata meta) {
+        this.meta = meta;
+    }
 
     public static enum PublishType {
 
@@ -62,7 +62,7 @@ public class ServerStream {
     private final ChannelGroup subscribers;
     private final List<RtmpMessage> configMessages;
     private Channel publisher;
-//    private Metadata meta;
+    private Metadata meta;
 
     private static final Logger logger = LoggerFactory.getLogger(ServerStream.class);
 

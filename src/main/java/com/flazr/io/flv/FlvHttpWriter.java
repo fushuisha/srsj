@@ -24,21 +24,16 @@ import com.flazr.rtmp.RtmpMessage;
 import com.flazr.rtmp.RtmpWriter;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelOutboundHandler;
 import io.netty.handler.stream.ChunkedStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.nio.channels.FileChannel;
 
-public class FlvNioWriter implements RtmpWriter {
+public class FlvHttpWriter implements RtmpWriter {
 
-    private static final Logger logger = LoggerFactory.getLogger(FlvNioWriter.class);
+    private static final Logger logger = LoggerFactory.getLogger(FlvHttpWriter.class);
 
     private Channel out;
     private final int[] channelTimes = new int[RtmpHeader.MAX_CHANNEL_ID];
@@ -55,11 +50,11 @@ public class FlvNioWriter implements RtmpWriter {
         return this.seekTime;
     }
 
-    public FlvNioWriter() {
+    public FlvHttpWriter() {
         this(0);
     }
 
-    public FlvNioWriter(final int seekTime) {
+    public FlvHttpWriter(final int seekTime) {
         this.seekTime = seekTime < 0 ? 0 : seekTime;
         this.startTime = System.currentTimeMillis();
 //        if(fileName == null) {
@@ -126,17 +121,19 @@ public class FlvNioWriter implements RtmpWriter {
                 logWriteProgress();
             }
         } else { // METADATA / AUDIO / VIDEO
-            final int channelId = header.getChannelId();
-            channelTimes[channelId] = seekTime + header.getTime();
-            if (primaryChannel == -1 && (header.isAudio() || header.isVideo())) {
-                logger.info("first media packet for channel: {}", header);
-                primaryChannel = channelId;
-//                setSeekTime(channelTimes[channelId]*-1);
-//                channelTimes[channelId] =0;
-            }
             if (header.getSize() <= 2) {
                 return;
             }
+            final int channelId = header.getChannelId();
+            int time = header.getTime();
+            if (primaryChannel == -1 && time > 0) {
+                logger.info("first media packet for channel: {}", header);
+                primaryChannel = channelId;
+//                setSeekTime(time * -1);
+//                return;
+            }
+
+            channelTimes[channelId] = seekTime + header.getTime();
             write(new FlvAtom(header.getMessageType(), channelTimes[channelId], message.encode()));
             if (channelId == primaryChannel) {
                 logWriteProgress();
@@ -153,7 +150,7 @@ public class FlvNioWriter implements RtmpWriter {
         }
         try {
             out.write(convert2ChunkedStream(flvAtom.write()));
-//            out.flush();
+            out.flush();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

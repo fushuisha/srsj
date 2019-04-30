@@ -269,4 +269,12 @@ public class RtmpUtil {
         }
         return mac.doFinal(message);
     }
+
+    public static String obj2str(Object value) {
+        if (value == null) {
+            return "";
+        } else {
+            return value.toString();
+        }
+    }
 }

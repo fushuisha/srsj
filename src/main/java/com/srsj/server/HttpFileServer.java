@@ -64,10 +64,11 @@ public class HttpFileServer implements InitializingBean {
                                     new ChunkedWriteHandler());
                             ch.pipeline().addLast("fileServerHandler",
                                     new HttpFileServerHandler(url));
+                            ch.pipeline().addLast("flvHandler",new FlvHandler());
                         }
                     });
             ChannelFuture future = b.bind(port).sync();
-            System.out.println("HTTP文件目录服务器启动，网址是 : " + "http://127.0.0.1:8080/myapp/dev");
+            System.out.println("HTTP文件目录服务器启动，网址是 : " + "http://127.0.0.1:8080/myapp/dev.flv");
             future.channel().closeFuture().sync();
         } finally {
             bossGroup.shutdownGracefully();
@@ -119,7 +120,7 @@ public class HttpFileServer implements InitializingBean {
                             }
                         });
                 ChannelFuture future = b.bind(port).sync();
-                System.out.println("HTTP文件目录服务器启动，网址是 : " + "http://127.0.0.1:8080/myapp/dev");
+                System.out.println("HTTP文件目录服务器启动，网址是 : " + "http://127.0.0.1:8080/myapp/dev.flv");
                 future.channel().closeFuture().sync();
             } catch (Exception ex) {
                 logger.warn(ex.toString(), ex);

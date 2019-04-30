@@ -1,22 +1,17 @@
 package com.srsj;
 
 
-import com.flazr.rtmp.server.RtmpServer;
-import com.srsj.server.HttpFileServer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.web.servlet.ServletComponentScan;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.ComponentScans;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
 
 @SpringBootApplication(scanBasePackages = "com")
 //@EnableEurekaClient
 //@ServletComponentScan
-@RestController
+@Controller
 public class ServiceApplication {
 
     public static void main(String[] args) throws Exception {
@@ -28,10 +23,14 @@ public class ServiceApplication {
     @Value("${server.port}")
     String port;
 
-    @RequestMapping("/console")
+    @RequestMapping(value = "/console", produces = {"application/json"})
     public String home(@RequestParam(required = false) String name) {
         return "hi " + name + ",i am from port:" + port;
     }
 
+    @RequestMapping(value = "/")
+    public String index() {
+        return "/index.html";
+    }
 
 }
